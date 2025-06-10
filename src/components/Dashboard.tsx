@@ -1,55 +1,81 @@
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, BookOpen, Target, Briefcase, TrendingUp, Calendar } from "lucide-react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+interface DashboardStats {
+  totalResumes: number;
+  activeCourses: number;
+  upcomingActivities: number;
+  activeApplications: number;
+}
 
 export function Dashboard() {
-  const [resumes] = useLocalStorage('resumes', []);
-  const [courses] = useLocalStorage('courses', []);
-  const [activities] = useLocalStorage('activities', []);
-  const [jobApplications] = useLocalStorage('jobApplications', []);
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalResumes: 0,
+    activeCourses: 0,
+    upcomingActivities: 0,
+    activeApplications: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Calculate stats
-  const activeJobs = jobApplications.filter((job: any) => 
-    job.status === 'In Progress' || job.status === 'Shortlisted'
-  ).length;
-  
-  const completedCourses = courses.filter((course: any) => 
-    course.status === 'Completed'
-  ).length;
-  
-  const upcomingActivities = activities.filter((activity: any) => {
-    const endDate = new Date(activity.predictedEndDate);
-    const today = new Date();
-    return endDate > today && activity.status !== 'Completed';
-  }).length;
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
-  const stats = [
+  const fetchStats = async () => {
+    try {
+      const [resumesResult, coursesResult, activitiesResult, jobsResult] = await Promise.all([
+        supabase.from('resumes').select('id', { count: 'exact' }).eq('user_id', user!.id),
+        supabase.from('courses').select('id', { count: 'exact' }).eq('user_id', user!.id).neq('status', 'Completed'),
+        supabase.from('activities').select('id', { count: 'exact' }).eq('user_id', user!.id).gte('predicted_end_date', new Date().toISOString().split('T')[0]).neq('status', 'Completed'),
+        supabase.from('job_applications').select('id', { count: 'exact' }).eq('user_id', user!.id).in('status', ['In Progress', 'Shortlisted'])
+      ]);
+
+      setStats({
+        totalResumes: resumesResult.count || 0,
+        activeCourses: coursesResult.count || 0,
+        upcomingActivities: activitiesResult.count || 0,
+        activeApplications: jobsResult.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statsConfig = [
     {
       title: "Total Resumes",
-      value: resumes.length,
+      value: stats.totalResumes,
       icon: FileText,
       description: "Uploaded documents",
       color: "text-blue-500",
     },
     {
       title: "Active Courses",
-      value: courses.length - completedCourses,
+      value: stats.activeCourses,
       icon: BookOpen,
       description: "Currently learning",
       color: "text-green-500",
     },
     {
       title: "Upcoming Activities",
-      value: upcomingActivities,
+      value: stats.upcomingActivities,
       icon: Target,
       description: "Tasks to complete",
       color: "text-yellow-500",
     },
     {
       title: "Active Applications",
-      value: activeJobs,
+      value: stats.activeApplications,
       icon: Briefcase,
       description: "Job opportunities",
       color: "text-primary",
@@ -63,6 +89,31 @@ export function Dashboard() {
     { type: "Activity", action: "Completed System Design study", time: "3 days ago" },
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Welcome back!</h2>
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 bg-muted rounded w-24"></div>
+                <div className="h-4 w-4 bg-muted rounded"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-16 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-32"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -75,7 +126,7 @@ export function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
+        {statsConfig.map((stat) => {
           const IconComponent = stat.icon;
           return (
             <Card key={stat.title} className="card-hover">

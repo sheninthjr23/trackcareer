@@ -9,7 +9,279 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          completed_manually: boolean | null
+          created_at: string
+          description: string | null
+          id: string
+          predicted_end_date: string
+          start_date: string
+          status: string
+          title: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_manually?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          predicted_end_date: string
+          start_date: string
+          status?: string
+          title: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_manually?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          predicted_end_date?: string
+          start_date?: string
+          status?: string
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      application_updates: {
+        Row: {
+          application_id: string
+          created_at: string
+          details: string
+          id: string
+          timestamp: string
+          update_date: string | null
+          update_type: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          details: string
+          id?: string
+          timestamp?: string
+          update_date?: string | null
+          update_type: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          details?: string
+          id?: string
+          timestamp?: string
+          update_date?: string | null
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_updates_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          course_link: string | null
+          created_at: string
+          github_link: string | null
+          id: string
+          provider_name: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_link?: string | null
+          created_at?: string
+          github_link?: string | null
+          id?: string
+          provider_name?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_link?: string | null
+          created_at?: string
+          github_link?: string | null
+          id?: string
+          provider_name?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_applications: {
+        Row: {
+          company_name: string
+          created_at: string
+          ctc: string | null
+          date_applied: string
+          id: string
+          initial_notes: string | null
+          location: string | null
+          next_round_date: string | null
+          role: string
+          rounds_passed: number | null
+          status: string
+          total_rounds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          ctc?: string | null
+          date_applied: string
+          id?: string
+          initial_notes?: string | null
+          location?: string | null
+          next_round_date?: string | null
+          role: string
+          rounds_passed?: number | null
+          status?: string
+          total_rounds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          ctc?: string | null
+          date_applied?: string
+          id?: string
+          initial_notes?: string | null
+          location?: string | null
+          next_round_date?: string | null
+          role?: string
+          rounds_passed?: number | null
+          status?: string
+          total_rounds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      resume_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_folder_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "resume_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resumes: {
+        Row: {
+          created_at: string
+          custom_name: string
+          file_path: string
+          folder_id: string | null
+          id: string
+          original_filename: string
+          shareable_expiry: string | null
+          shareable_token: string | null
+          updated_at: string
+          upload_timestamp: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_name: string
+          file_path: string
+          folder_id?: string | null
+          id?: string
+          original_filename: string
+          shareable_expiry?: string | null
+          shareable_token?: string | null
+          updated_at?: string
+          upload_timestamp?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_name?: string
+          file_path?: string
+          folder_id?: string | null
+          id?: string
+          original_filename?: string
+          shareable_expiry?: string | null
+          shareable_token?: string | null
+          updated_at?: string
+          upload_timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resumes_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "resume_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
