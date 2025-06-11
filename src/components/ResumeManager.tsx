@@ -1,39 +1,42 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileText, Download, Share2, Edit2, Trash2, Eye, Folder, Plus, ArrowLeft, Grid3X3, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ResumeViewer } from "./ResumeViewer";
 
 interface Resume {
   id: string;
-  folderId: string;
-  originalFilename: string;
-  customName: string;
-  uploadTimestamp: string;
-  fileContent?: string;
-  shareableToken?: string;
+  folder_id?: string;
+  original_filename: string;
+  custom_name: string;
+  upload_timestamp: string;
+  file_path: string;
+  shareable_token?: string;
+  shareable_expiry?: string;
+  user_id: string;
 }
 
 interface Folder {
   id: string;
   name: string;
-  parentFolderId?: string;
-  createdAt: string;
+  parent_folder_id?: string;
+  created_at: string;
+  user_id: string;
 }
 
 export function ResumeManager() {
-  const [resumes, setResumes] = useLocalStorage<Resume[]>('resumes', []);
-  const [folders, setFolders] = useLocalStorage<Folder[]>('folders', [
-    { id: 'root', name: 'All Resumes', createdAt: new Date().toISOString() }
-  ]);
-  const [selectedFolderId, setSelectedFolderId] = useState('root');
+  const { user } = useAuth();
+  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('root');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -41,7 +44,38 @@ export function ResumeManager() {
   const [newCustomName, setNewCustomName] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [viewingResume, setViewingResume] = useState<Resume | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      const [resumesResult, foldersResult] = await Promise.all([
+        supabase.from('resumes').select('*').eq('user_id', user!.id),
+        supabase.from('resume_folders').select('*').eq('user_id', user!.id)
+      ]);
+
+      if (resumesResult.error) throw resumesResult.error;
+      if (foldersResult.error) throw foldersResult.error;
+
+      setResumes(resumesResult.data || []);
+      setFolders(foldersResult.data || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch resumes and folders.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,113 +90,247 @@ export function ResumeManager() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const newResume: Resume = {
-        id: crypto.randomUUID(),
-        folderId: selectedFolderId,
-        originalFilename: file.name,
-        customName: file.name.replace('.pdf', ''),
-        uploadTimestamp: new Date().toISOString(),
-        fileContent: reader.result as string,
-      };
+    try {
+      const fileId = crypto.randomUUID();
+      const filePath = `resumes/${user!.id}/${fileId}.pdf`;
 
-      setResumes(prev => [...prev, newResume]);
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Insert metadata
+      const { error: insertError } = await supabase
+        .from('resumes')
+        .insert({
+          folder_id: selectedFolderId === 'root' ? null : selectedFolderId,
+          original_filename: file.name,
+          custom_name: file.name.replace('.pdf', ''),
+          file_path: filePath,
+          user_id: user!.id,
+        });
+
+      if (insertError) throw insertError;
+
       setIsUploadDialogOpen(false);
+      fetchData();
       toast({
         title: "Resume uploaded successfully",
         description: "Your resume is now available in your collection.",
       });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const createFolder = () => {
-    if (!newFolderName.trim()) return;
-
-    const newFolder: Folder = {
-      id: crypto.randomUUID(),
-      name: newFolderName,
-      parentFolderId: selectedFolderId === 'root' ? undefined : selectedFolderId,
-      createdAt: new Date().toISOString(),
-    };
-
-    setFolders(prev => [...prev, newFolder]);
-    setNewFolderName('');
-    setIsFolderDialogOpen(false);
-    toast({
-      title: "Folder created",
-      description: `"${newFolderName}" folder has been created successfully.`,
-    });
-  };
-
-  const updateResumeName = () => {
-    if (!editingResume || !newCustomName.trim()) return;
-
-    setResumes(prev => 
-      prev.map(resume => 
-        resume.id === editingResume.id 
-          ? { ...resume, customName: newCustomName }
-          : resume
-      )
-    );
-    setEditingResume(null);
-    setNewCustomName('');
-    toast({
-      title: "Resume renamed",
-      description: "Resume name has been updated successfully.",
-    });
-  };
-
-  const deleteResume = (resumeId: string) => {
-    setResumes(prev => prev.filter(resume => resume.id !== resumeId));
-    toast({
-      title: "Resume deleted",
-      description: "Resume has been permanently removed.",
-    });
-  };
-
-  const downloadResume = (resume: Resume) => {
-    if (!resume.fileContent) {
+    } catch (error) {
+      console.error('Error uploading resume:', error);
       toast({
-        title: "Download failed",
-        description: "Resume file is not available for download.",
+        title: "Upload failed",
+        description: "Failed to upload resume. Please try again.",
         variant: "destructive",
       });
-      return;
     }
-    
-    const link = document.createElement('a');
-    link.href = resume.fileContent;
-    link.download = resume.originalFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Download started",
-      description: "Your resume is being downloaded.",
-    });
   };
 
-  const generateShareLink = (resume: Resume) => {
-    const token = crypto.randomUUID();
-    setResumes(prev => 
-      prev.map(r => r.id === resume.id ? { ...r, shareableToken: token } : r)
+  const createFolder = async () => {
+    if (!newFolderName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('resume_folders')
+        .insert({
+          name: newFolderName,
+          parent_folder_id: selectedFolderId === 'root' ? null : selectedFolderId,
+          user_id: user!.id,
+        });
+
+      if (error) throw error;
+
+      setNewFolderName('');
+      setIsFolderDialogOpen(false);
+      fetchData();
+      toast({
+        title: "Folder created",
+        description: `"${newFolderName}" folder has been created successfully.`,
+      });
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateResumeName = async () => {
+    if (!editingResume || !newCustomName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('resumes')
+        .update({ custom_name: newCustomName })
+        .eq('id', editingResume.id);
+
+      if (error) throw error;
+
+      setEditingResume(null);
+      setNewCustomName('');
+      fetchData();
+      toast({
+        title: "Resume renamed",
+        description: "Resume name has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating resume:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update resume name.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteResume = async (resumeId: string) => {
+    try {
+      const resume = resumes.find(r => r.id === resumeId);
+      if (!resume) return;
+
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('resumes')
+        .remove([resume.file_path]);
+
+      if (storageError) console.warn('Error deleting from storage:', storageError);
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('id', resumeId);
+
+      if (dbError) throw dbError;
+
+      fetchData();
+      toast({
+        title: "Resume deleted",
+        description: "Resume has been permanently removed.",
+      });
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete resume.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadResume = async (resume: Resume) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(resume.file_path, 60);
+
+      if (error) throw error;
+
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = resume.original_filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download started",
+        description: "Your resume is being downloaded.",
+      });
+    } catch (error) {
+      console.error('Error downloading resume:', error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download resume.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateShareLink = async (resume: Resume) => {
+    try {
+      const token = crypto.randomUUID();
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 7);
+
+      const { error } = await supabase
+        .from('resumes')
+        .update({
+          shareable_token: token,
+          shareable_expiry: expiry.toISOString(),
+        })
+        .eq('id', resume.id);
+
+      if (error) throw error;
+
+      const shareUrl = `${window.location.origin}/shared/resume/${token}`;
+      navigator.clipboard.writeText(shareUrl);
+      fetchData();
+      toast({
+        title: "Share link copied",
+        description: "Shareable link has been copied to your clipboard.",
+      });
+    } catch (error) {
+      console.error('Error generating share link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate share link.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const currentFolderResumes = resumes.filter(resume => 
+    selectedFolderId === 'root' 
+      ? !resume.folder_id 
+      : resume.folder_id === selectedFolderId
+  );
+  
+  const currentFolder = selectedFolderId === 'root' 
+    ? { id: 'root', name: 'All Resumes' }
+    : folders.find(f => f.id === selectedFolderId);
+  
+  const subFolders = folders.filter(f => 
+    selectedFolderId === 'root' 
+      ? !f.parent_folder_id
+      : f.parent_folder_id === selectedFolderId
+  );
+  
+  const parentFolder = currentFolder && 'parent_folder_id' in currentFolder && currentFolder.parent_folder_id
+    ? folders.find(f => f.id === currentFolder.parent_folder_id)
+    : null;
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Resume Collection</h2>
+            <p className="text-muted-foreground">Loading your resumes...</p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-20"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     );
-    
-    const shareUrl = `${window.location.origin}/shared-resume/${token}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-      title: "Share link copied",
-      description: "Shareable link has been copied to your clipboard.",
-    });
-  };
-
-  const currentFolderResumes = resumes.filter(resume => resume.folderId === selectedFolderId);
-  const currentFolder = folders.find(f => f.id === selectedFolderId);
-  const subFolders = folders.filter(f => f.parentFolderId === (selectedFolderId === 'root' ? undefined : selectedFolderId));
-  const parentFolder = currentFolder?.parentFolderId ? folders.find(f => f.id === currentFolder.parentFolderId) : null;
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -208,9 +376,9 @@ export function ResumeManager() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="folderName" className="text-white">Folder Name</Label>
+                  <Label htmlFor="folder-name" className="text-white">Folder Name</Label>
                   <Input
-                    id="folderName"
+                    id="folder-name"
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     placeholder="Enter folder name"
@@ -239,14 +407,18 @@ export function ResumeManager() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-white/40 transition-colors">
-                  <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <Input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="cursor-pointer file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-white file:text-black hover:file:bg-gray-100"
-                  />
+                <div>
+                  <Label htmlFor="pdf-file" className="text-white">Select PDF File</Label>
+                  <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-white/40 transition-colors mt-2">
+                    <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <Input
+                      id="pdf-file"
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileUpload}
+                      className="cursor-pointer file:cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-white file:text-black hover:file:bg-gray-100"
+                    />
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground text-center">
                   Current location: <span className="text-white">{currentFolder?.name}</span>
@@ -328,7 +500,7 @@ export function ResumeManager() {
                 <CardTitle className="flex items-center justify-between text-white">
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText className="h-5 w-5 text-white flex-shrink-0" />
-                    <span className="truncate">{resume.customName}</span>
+                    <span className="truncate">{resume.custom_name}</span>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <Button
@@ -336,7 +508,7 @@ export function ResumeManager() {
                       size="sm"
                       onClick={() => {
                         setEditingResume(resume);
-                        setNewCustomName(resume.customName);
+                        setNewCustomName(resume.custom_name);
                       }}
                       className="h-8 w-8 p-0 hover:bg-white/10"
                     >
@@ -353,7 +525,9 @@ export function ResumeManager() {
                   </div>
                 </CardTitle>
                 <CardDescription className="text-muted-foreground">
-                  Uploaded: {new Date(resume.uploadTimestamp).toLocaleDateString()}
+                  Uploaded: {new Date(resume.upload_timestamp).toLocaleDateString('en-IN', {
+                    timeZone: 'Asia/Kolkata'
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent className={viewMode === 'list' ? 'flex items-center gap-2' : ''}>
@@ -365,7 +539,7 @@ export function ResumeManager() {
                     onClick={() => setViewingResume(resume)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    View
+                    Preview
                   </Button>
                   <Button 
                     variant="outline" 
@@ -385,7 +559,7 @@ export function ResumeManager() {
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>
-                {resume.shareableToken && (
+                {resume.shareable_token && (
                   <Badge variant="secondary" className="mt-3 bg-green-500/10 text-green-400 border-green-500/30">
                     Shareable link generated
                   </Badge>
@@ -407,9 +581,9 @@ export function ResumeManager() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="customName" className="text-white">Custom Name</Label>
+              <Label htmlFor="new-name" className="text-white">New Name</Label>
               <Input
-                id="customName"
+                id="new-name"
                 value={newCustomName}
                 onChange={(e) => setNewCustomName(e.target.value)}
                 placeholder="Enter custom name"
