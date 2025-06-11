@@ -1,117 +1,134 @@
 
-import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, X, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Resume {
+  id: string;
+  custom_name: string;
+  original_filename: string;
+  file_path: string;
+  upload_timestamp: string;
+  user_id: string;
+  folder_id?: string;
+  shareable_token?: string;
+  shareable_expiry?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ResumeViewerProps {
   isOpen: boolean;
   onClose: () => void;
-  resume: {
-    id: string;
-    customName: string;
-    fileContent?: string;
-    originalFilename: string;
-  } | null;
+  resume: Resume | null;
 }
 
 export function ResumeViewer({ isOpen, onClose, resume }: ResumeViewerProps) {
-  const [zoom, setZoom] = useState(100);
-  const [rotation, setRotation] = useState(0);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  if (!resume) return null;
+  useEffect(() => {
+    if (isOpen && resume) {
+      loadPdfUrl();
+    } else {
+      setPdfUrl(null);
+    }
+  }, [isOpen, resume]);
 
-  const handleDownload = () => {
-    if (!resume.fileContent) return;
+  const loadPdfUrl = async () => {
+    if (!resume) return;
     
-    const link = document.createElement('a');
-    link.href = resume.fileContent;
-    link.download = resume.originalFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(resume.file_path, 3600);
+
+      if (error) throw error;
+      setPdfUrl(data.signedUrl);
+    } catch (error) {
+      console.error('Error loading PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load PDF preview.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));
-  const handleRotate = () => setRotation(prev => (prev + 90) % 360);
+  const downloadResume = () => {
+    if (pdfUrl && resume) {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = resume.original_filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download started",
+        description: "Resume is being downloaded.",
+      });
+    }
+  };
+
+  const openInNewTab = () => {
+    if (pdfUrl) {
+      window.open(pdfUrl, '_blank');
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] elegant-card">
-        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-white/10">
-          <DialogTitle className="text-xl font-semibold text-white">
-            {resume.customName}
-          </DialogTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomOut}
-              className="button-elegant-outline h-8 w-8 p-0"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground px-2">{zoom}%</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomIn}
-              className="button-elegant-outline h-8 w-8 p-0"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRotate}
-              className="button-elegant-outline h-8 w-8 p-0"
-            >
-              <RotateCw className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={handleDownload}
-              className="button-elegant"
-              size="sm"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              className="button-elegant-outline h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+      <DialogContent className="max-w-6xl h-[90vh] elegant-card">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-white">{resume?.custom_name}</DialogTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openInNewTab}
+                disabled={!pdfUrl}
+                className="button-elegant-outline"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open in New Tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadResume}
+                disabled={!pdfUrl}
+                className="button-elegant-outline"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </div>
           </div>
         </DialogHeader>
         
-        <div className="flex-1 overflow-auto">
-          {resume.fileContent ? (
-            <div className="flex justify-center p-4">
-              <div 
-                className="bg-white shadow-2xl"
-                style={{
-                  transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
-                  transformOrigin: 'center center',
-                  transition: 'transform 0.3s ease'
-                }}
-              >
-                <iframe
-                  src={resume.fileContent}
-                  className="w-[595px] h-[842px] border-none"
-                  title={resume.customName}
-                />
-              </div>
+        <div className="flex-1 overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
+          ) : pdfUrl ? (
+            <iframe
+              src={pdfUrl}
+              className="w-full h-full rounded-lg border border-white/20"
+              title={resume?.custom_name}
+            />
           ) : (
-            <div className="flex items-center justify-center h-96">
-              <div className="text-center text-muted-foreground">
-                <p className="text-lg mb-2">No preview available</p>
-                <p className="text-sm">PDF content could not be loaded</p>
-              </div>
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              Failed to load PDF preview
             </div>
           )}
         </div>
