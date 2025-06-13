@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { FileText, BookOpen, Target, Briefcase, LayoutGrid, Sparkles, MessageCircleQuestion } from "lucide-react";
+import { FileText, BookOpen, Target, Briefcase, LayoutGrid, Sparkles, MessageCircleQuestion, Youtube } from "lucide-react";
 import type { Section } from "@/pages/Index";
 
 interface AppSidebarProps {
@@ -41,6 +41,12 @@ const menuItems = [
     section: "doubts" as Section,
     icon: MessageCircleQuestion,
     description: "Questions & Notes"
+  },
+  {
+    title: "YouTube Learning",
+    section: "youtube" as Section,
+    icon: Youtube,
+    description: "Video & Todos"
   },
   {
     title: "Activity Tracking",

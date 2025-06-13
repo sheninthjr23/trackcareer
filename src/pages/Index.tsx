@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ResumeManager } from '@/components/ResumeManager';
 import { CourseManager } from '@/components/CourseManager';
 import { DoubtManager } from '@/components/DoubtManager';
+import { YoutubeManager } from '@/components/YoutubeManager';
 import { ActivityTracker } from '@/components/ActivityTracker';
 import { JobApplicationTracker } from '@/components/JobApplicationTracker';
 import { Dashboard } from '@/components/Dashboard';
@@ -12,7 +12,7 @@ import { Auth } from '@/components/Auth';
 import { Header } from '@/components/Header';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
-export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'activities' | 'jobs';
+export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -40,6 +40,8 @@ function AppContent() {
         return <CourseManager />;
       case 'doubts':
         return <DoubtManager />;
+      case 'youtube':
+        return <YoutubeManager />;
       case 'activities':
         return <ActivityTracker />;
       case 'jobs':
@@ -59,6 +61,8 @@ function AppContent() {
         return 'Course Management';
       case 'doubts':
         return 'Doubt & Notes';
+      case 'youtube':
+        return 'YouTube Learning';
       case 'activities':
         return 'Activity Tracking';
       case 'jobs':
@@ -78,6 +82,8 @@ function AppContent() {
         return 'Track your learning journey and course progress';
       case 'doubts':
         return 'Organize your questions and markdown notes';
+      case 'youtube':
+        return 'Manage YouTube videos and learning todos';
       case 'activities':
         return 'Monitor your tasks and activities';
       case 'jobs':

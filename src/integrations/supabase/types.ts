@@ -166,6 +166,13 @@ export type Database = {
             referencedRelation: "course_folders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_course_folders_parent"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "course_folders"
+            referencedColumns: ["id"]
+          },
         ]
       }
       courses: {
@@ -232,6 +239,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "doubt_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "doubt_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_doubt_folders_parent"
             columns: ["parent_folder_id"]
             isOneToOne: false
             referencedRelation: "doubt_folders"
@@ -430,6 +444,126 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "resume_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_folder_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_todos: {
+        Row: {
+          content: string | null
+          created_at: string
+          folder_id: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          folder_id: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          folder_id?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_todos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_videos: {
+        Row: {
+          content: string | null
+          created_at: string
+          folder_id: string
+          id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          youtube_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          folder_id: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          youtube_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          folder_id?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_videos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_folders"
             referencedColumns: ["id"]
           },
         ]
