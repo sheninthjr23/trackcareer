@@ -1,438 +1,440 @@
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, Plus, Edit2, Trash2, ExternalLink, Github, Filter } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { FolderOpen, Plus, Video, ArrowUp, ArrowDown } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-interface Course {
+interface CourseFolder {
   id: string;
-  title: string;
-  course_link?: string;
-  github_link?: string;
-  provider_name?: string;
-  status: 'In Progress' | 'Completed';
+  name: string;
+  parent_folder_id: string | null;
+  user_id: string;
   created_at: string;
   updated_at: string;
+}
+
+interface CourseElement {
+  id: string;
+  title: string;
+  course_order: number;
+  google_drive_link: string | null;
+  description: string;
+  folder_id: string;
   user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function CourseManager() {
-  const { user } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchProvider, setSearchProvider] = useState('');
-  const [formData, setFormData] = useState({
+  const [folders, setFolders] = useState<CourseFolder[]>([]);
+  const [elements, setElements] = useState<CourseElement[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedElement, setSelectedElement] = useState<CourseElement | null>(null);
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [isElementDialogOpen, setIsElementDialogOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newElement, setNewElement] = useState({
     title: '',
-    course_link: '',
-    github_link: '',
-    provider_name: '',
-    status: 'In Progress' as 'In Progress' | 'Completed',
+    google_drive_link: '',
+    description: '',
   });
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      fetchCourses();
+      fetchFolders();
+      fetchElements();
     }
   }, [user]);
 
-  const fetchCourses = async () => {
+  const fetchFolders = async () => {
     try {
       const { data, error } = await supabase
-        .from('courses')
+        .from('course_folders')
         .select('*')
-        .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        .order('name');
 
       if (error) throw error;
-      setCourses(data as Course[]);
+      setFolders(data || []);
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('Error fetching folders:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch courses.",
+        description: "Failed to fetch folders.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      course_link: '',
-      github_link: '',
-      provider_name: '',
-      status: 'In Progress',
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.title) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in the course title.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const fetchElements = async () => {
     try {
-      if (editingCourse) {
-        const { error } = await supabase
-          .from('courses')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingCourse.id);
+      const { data, error } = await supabase
+        .from('course_elements')
+        .select('*')
+        .order('course_order');
 
-        if (error) throw error;
-        toast({
-          title: "Course updated",
-          description: "Course has been updated successfully.",
-        });
-      } else {
-        const { error } = await supabase
-          .from('courses')
-          .insert({
-            ...formData,
-            user_id: user!.id,
-          });
-
-        if (error) throw error;
-        toast({
-          title: "Course added",
-          description: "New course has been added successfully.",
-        });
-      }
-
-      setIsDialogOpen(false);
-      setEditingCourse(null);
-      resetForm();
-      fetchCourses();
+      if (error) throw error;
+      setElements(data || []);
     } catch (error) {
-      console.error('Error saving course:', error);
+      console.error('Error fetching course elements:', error);
       toast({
         title: "Error",
-        description: "Failed to save course.",
+        description: "Failed to fetch course elements.",
         variant: "destructive",
       });
     }
   };
 
-  const deleteCourse = async (courseId: string) => {
+  const createFolder = async () => {
+    if (!newFolderName.trim() || !user) return;
+
     try {
       const { error } = await supabase
-        .from('courses')
-        .delete()
-        .eq('id', courseId);
+        .from('course_folders')
+        .insert({
+          name: newFolderName.trim(),
+          user_id: user.id,
+        });
 
       if (error) throw error;
+
+      setNewFolderName('');
+      setIsFolderDialogOpen(false);
+      fetchFolders();
       toast({
-        title: "Course deleted",
-        description: "Course has been removed successfully.",
+        title: "Success",
+        description: "Course folder created successfully.",
       });
-      fetchCourses();
     } catch (error) {
-      console.error('Error deleting course:', error);
+      console.error('Error creating folder:', error);
       toast({
         title: "Error",
-        description: "Failed to delete course.",
+        description: "Failed to create folder.",
         variant: "destructive",
       });
     }
   };
 
-  const openEditDialog = (course: Course) => {
-    setEditingCourse(course);
-    setFormData({
-      title: course.title,
-      course_link: course.course_link || '',
-      github_link: course.github_link || '',
-      provider_name: course.provider_name || '',
-      status: course.status,
-    });
-    setIsDialogOpen(true);
+  const createElement = async () => {
+    if (!newElement.title.trim() || !selectedFolder || !user) return;
+
+    try {
+      // Get the next order number
+      const folderElements = elements.filter(e => e.folder_id === selectedFolder);
+      const nextOrder = folderElements.length > 0 
+        ? Math.max(...folderElements.map(e => e.course_order)) + 1 
+        : 1;
+
+      const { error } = await supabase
+        .from('course_elements')
+        .insert({
+          title: newElement.title.trim(),
+          google_drive_link: newElement.google_drive_link.trim() || null,
+          description: newElement.description.trim(),
+          folder_id: selectedFolder,
+          user_id: user.id,
+          course_order: nextOrder,
+        });
+
+      if (error) throw error;
+
+      setNewElement({ title: '', google_drive_link: '', description: '' });
+      setIsElementDialogOpen(false);
+      fetchElements();
+      toast({
+        title: "Success",
+        description: "Course element created successfully.",
+      });
+    } catch (error) {
+      console.error('Error creating element:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create course element.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const openAddDialog = () => {
-    setEditingCourse(null);
-    resetForm();
-    setIsDialogOpen(true);
+  const updateElementOrder = async (elementId: string, newOrder: number) => {
+    try {
+      const { error } = await supabase
+        .from('course_elements')
+        .update({ course_order: newOrder })
+        .eq('id', elementId);
+
+      if (error) throw error;
+      fetchElements();
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update order.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const filteredCourses = courses.filter(course => {
-    const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
-    const matchesProvider = !searchProvider || 
-      (course.provider_name && course.provider_name.toLowerCase().includes(searchProvider.toLowerCase()));
-    return matchesStatus && matchesProvider;
-  });
+  const moveElement = (element: CourseElement, direction: 'up' | 'down') => {
+    const folderElements = elements
+      .filter(e => e.folder_id === element.folder_id)
+      .sort((a, b) => a.course_order - b.course_order);
+    
+    const currentIndex = folderElements.findIndex(e => e.id === element.id);
+    
+    if (direction === 'up' && currentIndex > 0) {
+      const targetElement = folderElements[currentIndex - 1];
+      updateElementOrder(element.id, targetElement.course_order);
+      updateElementOrder(targetElement.id, element.course_order);
+    } else if (direction === 'down' && currentIndex < folderElements.length - 1) {
+      const targetElement = folderElements[currentIndex + 1];
+      updateElementOrder(element.id, targetElement.course_order);
+      updateElementOrder(targetElement.id, element.course_order);
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Course Management</h2>
-            <p className="text-muted-foreground">Loading your courses...</p>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-3 bg-muted rounded w-full mb-2"></div>
-                <div className="h-8 bg-muted rounded w-20"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const extractGoogleDriveVideoId = (url: string) => {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  };
+
+  const getEmbedUrl = (driveUrl: string) => {
+    const videoId = extractGoogleDriveVideoId(driveUrl);
+    return videoId ? `https://drive.google.com/file/d/${videoId}/preview` : null;
+  };
+
+  const filteredElements = selectedFolder
+    ? elements
+        .filter(element => element.folder_id === selectedFolder)
+        .sort((a, b) => a.course_order - b.course_order)
+    : [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight text-gradient">Course Management</h2>
-          <p className="text-muted-foreground text-lg">Track your learning journey and course progress</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Course Management</h1>
+          <p className="text-muted-foreground">Organize your video learning content</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddDialog} className="button-elegant">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Course
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="elegant-card">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCourse ? 'Edit Course' : 'Add New Course'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingCourse 
-                  ? 'Update course details and progress.'
-                  : 'Add a new course to track your learning journey.'
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="course-title" className="text-white">Title *</Label>
-                <Input
-                  id="course-title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="e.g., React Advanced Patterns"
-                  className="elegant-input mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="course-link" className="text-white">Course Link (URL)</Label>
-                <Input
-                  id="course-link"
-                  type="url"
-                  value={formData.course_link}
-                  onChange={(e) => setFormData(prev => ({ ...prev, course_link: e.target.value }))}
-                  placeholder="https://example.com/course"
-                  className="elegant-input mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="github-link" className="text-white">GitHub Link (optional)</Label>
-                <Input
-                  id="github-link"
-                  type="url"
-                  value={formData.github_link}
-                  onChange={(e) => setFormData(prev => ({ ...prev, github_link: e.target.value }))}
-                  placeholder="https://github.com/username/repo"
-                  className="elegant-input mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="provider-name" className="text-white">Provider/Lecturer Name</Label>
-                <Input
-                  id="provider-name"
-                  value={formData.provider_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, provider_name: e.target.value }))}
-                  placeholder="e.g., Udemy, Coursera, or Instructor Name"
-                  className="elegant-input mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="status" className="text-white">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: 'In Progress' | 'Completed') => 
-                    setFormData(prev => ({ ...prev, status: value }))
-                  }
-                >
-                  <SelectTrigger className="elegant-input mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleSubmit} className="w-full button-elegant">
-                {editingCourse ? 'Update Course' : 'Add Course'}
+        <div className="flex gap-2">
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="button-elegant-outline">
+                <FolderOpen className="h-4 w-4 mr-2" />
+                New Course
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="elegant-card">
+              <DialogHeader>
+                <DialogTitle className="text-white">Create New Course</DialogTitle>
+                <DialogDescription>
+                  Create a new course folder to organize your learning content.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="courseName" className="text-white">Course Name</Label>
+                  <Input
+                    id="courseName"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Enter course name"
+                    className="input-elegant"
+                  />
+                </div>
+                <Button onClick={createFolder} disabled={!newFolderName.trim()} className="button-elegant w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Course
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {selectedFolder && (
+            <Dialog open={isElementDialogOpen} onOpenChange={setIsElementDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="button-elegant">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Video
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="elegant-card">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Add Course Element</DialogTitle>
+                  <DialogDescription>
+                    Add a new video or content to your course.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="elementTitle" className="text-white">Title</Label>
+                    <Input
+                      id="elementTitle"
+                      value={newElement.title}
+                      onChange={(e) => setNewElement({ ...newElement, title: e.target.value })}
+                      placeholder="Enter element title"
+                      className="input-elegant"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="driveLink" className="text-white">Google Drive Video Link</Label>
+                    <Input
+                      id="driveLink"
+                      value={newElement.google_drive_link}
+                      onChange={(e) => setNewElement({ ...newElement, google_drive_link: e.target.value })}
+                      placeholder="Paste Google Drive video link"
+                      className="input-elegant"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description" className="text-white">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newElement.description}
+                      onChange={(e) => setNewElement({ ...newElement, description: e.target.value })}
+                      placeholder="Enter description (optional)"
+                      className="input-elegant"
+                    />
+                  </div>
+                  <Button onClick={createElement} disabled={!newElement.title.trim()} className="button-elegant w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Element
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
 
-      {/* Filters */}
-      <Card className="elegant-card">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Label htmlFor="search-provider" className="text-white text-sm">Search by Provider</Label>
-              <Input
-                id="search-provider"
-                placeholder="Search by provider name..."
-                value={searchProvider}
-                onChange={(e) => setSearchProvider(e.target.value)}
-                className="elegant-input mt-1"
-              />
-            </div>
-            <div className="sm:w-48">
-              <Label className="text-white text-sm">Filter by Status</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="elegant-input mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Courses</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <h3 className="text-lg font-semibold text-white mb-4">Courses</h3>
+          <div className="space-y-2">
+            {folders.map((folder) => (
+              <Card 
+                key={folder.id} 
+                className={`elegant-card cursor-pointer transition-all hover:scale-105 ${
+                  selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
+                }`}
+                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-white text-sm flex items-center">
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {folder.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-xs">
+                    {elements.filter(e => e.folder_id === folder.id).length} elements
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Courses Grid */}
-      {filteredCourses.length === 0 ? (
-        <Card className="elegant-card">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No courses yet</h3>
-            <p className="text-muted-foreground text-center mb-6">
-              Start tracking your learning journey by adding your first course.
-            </p>
-            <Button onClick={openAddDialog} className="button-elegant">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Course
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCourses.map((course) => (
-            <Card key={course.id} className="card-hover elegant-card">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <BookOpen className="h-5 w-5 text-white flex-shrink-0" />
-                    <span className="truncate">{course.title}</span>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(course)}
-                      className="h-8 w-8 p-0 hover:bg-white/10"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteCourse(course.id)}
-                      className="h-8 w-8 p-0 hover:bg-red-500/20 text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardTitle>
-                {course.provider_name && (
-                  <CardDescription className="text-muted-foreground">
-                    {course.provider_name}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Badge 
-                    className={
-                      course.status === 'Completed'
-                        ? 'status-completed'
-                        : 'status-in-progress'
-                    }
-                  >
-                    {course.status}
-                  </Badge>
-                  
-                  <div className="flex gap-2">
-                    {course.course_link && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="button-elegant-outline flex-1"
-                        onClick={() => window.open(course.course_link, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Course
-                      </Button>
-                    )}
-                    {course.github_link && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="button-elegant-outline flex-1"
-                        onClick={() => window.open(course.github_link, '_blank')}
-                      >
-                        <Github className="h-4 w-4 mr-2" />
-                        GitHub
-                      </Button>
-                    )}
-                  </div>
-                  
-                  <div className="text-xs text-muted-foreground">
-                    Added: {new Date(course.created_at).toLocaleDateString('en-IN', {
-                      timeZone: 'Asia/Kolkata'
-                    })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
-      )}
+
+        <div className="lg:col-span-3">
+          {selectedFolder ? (
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                {folders.find(f => f.id === selectedFolder)?.name} Content
+              </h3>
+              <div className="space-y-4">
+                {filteredElements.map((element, index) => (
+                  <Card key={element.id} className="elegant-card">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-white text-sm flex items-center">
+                          <Video className="h-4 w-4 mr-2" />
+                          {element.course_order}. {element.title}
+                        </CardTitle>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => moveElement(element, 'up')}
+                            disabled={index === 0}
+                            className="button-elegant-outline h-8 w-8 p-0"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => moveElement(element, 'down')}
+                            disabled={index === filteredElements.length - 1}
+                            className="button-elegant-outline h-8 w-8 p-0"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {element.description && (
+                        <p className="text-muted-foreground text-sm mb-3">
+                          {element.description}
+                        </p>
+                      )}
+                      {element.google_drive_link && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelectedElement(element);
+                            setIsViewerOpen(true);
+                          }}
+                          className="button-elegant"
+                        >
+                          <Video className="h-3 w-3 mr-1" />
+                          Watch Video
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              Select a course to view content
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Video Viewer Modal */}
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="max-w-6xl h-[90vh] elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">{selectedElement?.title}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            {selectedElement?.google_drive_link && getEmbedUrl(selectedElement.google_drive_link) ? (
+              <iframe
+                src={getEmbedUrl(selectedElement.google_drive_link)!}
+                className="w-full h-full rounded-lg border border-white/20"
+                title={selectedElement.title}
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                No valid video link available
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

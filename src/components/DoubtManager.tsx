@@ -1,0 +1,393 @@
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { FolderOpen, Plus, Edit, Save } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface DoubtFolder {
+  id: string;
+  name: string;
+  parent_folder_id: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DoubtQuestion {
+  id: string;
+  title: string;
+  markdown_content: string;
+  folder_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function DoubtManager() {
+  const [folders, setFolders] = useState<DoubtFolder[]>([]);
+  const [questions, setQuestions] = useState<DoubtQuestion[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedQuestion, setSelectedQuestion] = useState<DoubtQuestion | null>(null);
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
+  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newQuestionTitle, setNewQuestionTitle] = useState('');
+  const [markdownContent, setMarkdownContent] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchFolders();
+      fetchQuestions();
+    }
+  }, [user]);
+
+  const fetchFolders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('doubt_folders')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setFolders(data || []);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch folders.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('doubt_questions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setQuestions(data || []);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch questions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createFolder = async () => {
+    if (!newFolderName.trim() || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('doubt_folders')
+        .insert({
+          name: newFolderName.trim(),
+          user_id: user.id,
+        });
+
+      if (error) throw error;
+
+      setNewFolderName('');
+      setIsFolderDialogOpen(false);
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Folder created successfully.",
+      });
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createQuestion = async () => {
+    if (!newQuestionTitle.trim() || !selectedFolder || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('doubt_questions')
+        .insert({
+          title: newQuestionTitle.trim(),
+          folder_id: selectedFolder,
+          user_id: user.id,
+          markdown_content: '',
+        });
+
+      if (error) throw error;
+
+      setNewQuestionTitle('');
+      setIsQuestionDialogOpen(false);
+      fetchQuestions();
+      toast({
+        title: "Success",
+        description: "Question created successfully.",
+      });
+    } catch (error) {
+      console.error('Error creating question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create question.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditor = (question: DoubtQuestion) => {
+    setSelectedQuestion(question);
+    setMarkdownContent(question.markdown_content || '');
+    setIsEditorOpen(true);
+  };
+
+  const saveMarkdown = async () => {
+    if (!selectedQuestion) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('doubt_questions')
+        .update({
+          markdown_content: markdownContent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedQuestion.id);
+
+      if (error) throw error;
+
+      fetchQuestions();
+      toast({
+        title: "Success",
+        description: "Notes saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save notes.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredQuestions = selectedFolder
+    ? questions.filter(question => question.folder_id === selectedFolder)
+    : [];
+
+  const renderMarkdownPreview = (content: string) => {
+    // Simple markdown preview - you can enhance this with a proper markdown parser
+    return content
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .replace(/\n/gim, '<br>');
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Doubt & Notes</h1>
+          <p className="text-muted-foreground">Organize your questions and markdown notes</p>
+        </div>
+        <div className="flex gap-2">
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="button-elegant-outline">
+                <FolderOpen className="h-4 w-4 mr-2" />
+                New Folder
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="elegant-card">
+              <DialogHeader>
+                <DialogTitle className="text-white">Create New Folder</DialogTitle>
+                <DialogDescription>
+                  Create a new folder to organize your questions and notes.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="folderName" className="text-white">Folder Name</Label>
+                  <Input
+                    id="folderName"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Enter folder name"
+                    className="input-elegant"
+                  />
+                </div>
+                <Button onClick={createFolder} disabled={!newFolderName.trim()} className="button-elegant w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Folder
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {selectedFolder && (
+            <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="button-elegant">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Question
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="elegant-card">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Create New Question</DialogTitle>
+                  <DialogDescription>
+                    Add a new question to your selected folder.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="questionTitle" className="text-white">Question Title</Label>
+                    <Input
+                      id="questionTitle"
+                      value={newQuestionTitle}
+                      onChange={(e) => setNewQuestionTitle(e.target.value)}
+                      placeholder="Enter question title"
+                      className="input-elegant"
+                    />
+                  </div>
+                  <Button onClick={createQuestion} disabled={!newQuestionTitle.trim()} className="button-elegant w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Question
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <h3 className="text-lg font-semibold text-white mb-4">Folders</h3>
+          <div className="space-y-2">
+            {folders.map((folder) => (
+              <Card 
+                key={folder.id} 
+                className={`elegant-card cursor-pointer transition-all hover:scale-105 ${
+                  selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
+                }`}
+                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-white text-sm flex items-center">
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {folder.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-xs">
+                    {questions.filter(q => q.folder_id === folder.id).length} questions
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-3">
+          {selectedFolder ? (
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Questions in {folders.find(f => f.id === selectedFolder)?.name}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredQuestions.map((question) => (
+                  <Card key={question.id} className="elegant-card">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-white text-sm">
+                        {question.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground text-xs mb-3">
+                        {new Date(question.created_at).toLocaleDateString()}
+                      </p>
+                      <Button
+                        size="sm"
+                        onClick={() => openEditor(question)}
+                        className="button-elegant w-full"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit Notes
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              Select a folder to view questions
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Markdown Editor Modal */}
+      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+        <DialogContent className="max-w-6xl h-[90vh] elegant-card">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-white">{selectedQuestion?.title}</DialogTitle>
+              <Button
+                onClick={saveMarkdown}
+                disabled={saving}
+                className="button-elegant"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 grid grid-cols-2 gap-4 overflow-hidden">
+            <div className="flex flex-col">
+              <Label className="text-white mb-2">Markdown Editor</Label>
+              <Textarea
+                value={markdownContent}
+                onChange={(e) => setMarkdownContent(e.target.value)}
+                placeholder="Write your notes in markdown..."
+                className="flex-1 resize-none input-elegant font-mono text-sm"
+              />
+            </div>
+            <div className="flex flex-col">
+              <Label className="text-white mb-2">Preview</Label>
+              <div 
+                className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

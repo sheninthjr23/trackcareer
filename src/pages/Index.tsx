@@ -4,6 +4,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ResumeManager } from '@/components/ResumeManager';
 import { CourseManager } from '@/components/CourseManager';
+import { DoubtManager } from '@/components/DoubtManager';
 import { ActivityTracker } from '@/components/ActivityTracker';
 import { JobApplicationTracker } from '@/components/JobApplicationTracker';
 import { Dashboard } from '@/components/Dashboard';
@@ -11,7 +12,7 @@ import { Auth } from '@/components/Auth';
 import { Header } from '@/components/Header';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
-export type Section = 'dashboard' | 'resumes' | 'courses' | 'activities' | 'jobs';
+export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'activities' | 'jobs';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -37,6 +38,8 @@ function AppContent() {
         return <ResumeManager />;
       case 'courses':
         return <CourseManager />;
+      case 'doubts':
+        return <DoubtManager />;
       case 'activities':
         return <ActivityTracker />;
       case 'jobs':
@@ -54,6 +57,8 @@ function AppContent() {
         return 'Resume Management';
       case 'courses':
         return 'Course Management';
+      case 'doubts':
+        return 'Doubt & Notes';
       case 'activities':
         return 'Activity Tracking';
       case 'jobs':
@@ -71,6 +76,8 @@ function AppContent() {
         return 'Upload, organize, and share your resumes';
       case 'courses':
         return 'Track your learning journey and course progress';
+      case 'doubts':
+        return 'Organize your questions and markdown notes';
       case 'activities':
         return 'Monitor your tasks and activities';
       case 'jobs':
