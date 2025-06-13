@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,10 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Edit, Save } from 'lucide-react';
+import { FolderOpen, Plus, Edit, Save, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DoubtFolder {
   id: string;
@@ -43,6 +57,11 @@ export function DoubtManager() {
   const [newQuestionTitle, setNewQuestionTitle] = useState('');
   const [markdownContent, setMarkdownContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<DoubtFolder | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
+  const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'folder' | 'question'; id: string; name: string } | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -191,12 +210,104 @@ export function DoubtManager() {
     }
   };
 
+  const updateFolder = async () => {
+    if (!editFolderName.trim() || !editingFolder) return;
+
+    try {
+      const { error } = await supabase
+        .from('doubt_folders')
+        .update({
+          name: editFolderName.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingFolder.id);
+
+      if (error) throw error;
+
+      setEditFolderName('');
+      setEditingFolder(null);
+      setIsEditFolderDialogOpen(false);
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Folder updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteItem = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      if (itemToDelete.type === 'folder') {
+        // First delete all questions in the folder
+        await supabase
+          .from('doubt_questions')
+          .delete()
+          .eq('folder_id', itemToDelete.id);
+
+        // Then delete the folder
+        const { error } = await supabase
+          .from('doubt_folders')
+          .delete()
+          .eq('id', itemToDelete.id);
+
+        if (error) throw error;
+
+        if (selectedFolder === itemToDelete.id) {
+          setSelectedFolder(null);
+        }
+        fetchFolders();
+        fetchQuestions();
+      } else {
+        const { error } = await supabase
+          .from('doubt_questions')
+          .delete()
+          .eq('id', itemToDelete.id);
+
+        if (error) throw error;
+        fetchQuestions();
+      }
+
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
+      toast({
+        title: "Success",
+        description: `${itemToDelete.type === 'folder' ? 'Folder' : 'Question'} deleted successfully.`,
+      });
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast({
+        title: "Error",
+        description: `Failed to delete ${itemToDelete.type}.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditFolder = (folder: DoubtFolder) => {
+    setEditingFolder(folder);
+    setEditFolderName(folder.name);
+    setIsEditFolderDialogOpen(true);
+  };
+
+  const openDeleteConfirm = (type: 'folder' | 'question', id: string, name: string) => {
+    setItemToDelete({ type, id, name });
+    setDeleteConfirmOpen(true);
+  };
+
   const filteredQuestions = selectedFolder
     ? questions.filter(question => question.folder_id === selectedFolder)
     : [];
 
   const renderMarkdownPreview = (content: string) => {
-    // Simple markdown preview - you can enhance this with a proper markdown parser
     return content
       .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -294,13 +405,37 @@ export function DoubtManager() {
                 className={`elegant-card cursor-pointer transition-all hover:scale-105 ${
                   selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
                 }`}
-                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-white text-sm flex items-center">
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    {folder.name}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle 
+                      className="text-white text-sm flex items-center flex-1"
+                      onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
+                    >
+                      <FolderOpen className="h-4 w-4 mr-2" />
+                      {folder.name}
+                    </CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-white/10">
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                        <DropdownMenuItem onClick={() => openEditFolder(folder)} className="text-white hover:bg-gray-800">
+                          <Edit className="h-3 w-3 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => openDeleteConfirm('folder', folder.id, folder.name)}
+                          className="text-red-400 hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-3 w-3 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-xs">
@@ -322,9 +457,27 @@ export function DoubtManager() {
                 {filteredQuestions.map((question) => (
                   <Card key={question.id} className="elegant-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-white text-sm">
-                        {question.title}
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-white text-sm flex-1">
+                          {question.title}
+                        </CardTitle>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-white/10">
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                            <DropdownMenuItem 
+                              onClick={() => openDeleteConfirm('question', question.id, question.title)}
+                              className="text-red-400 hover:bg-red-900/20"
+                            >
+                              <Trash2 className="h-3 w-3 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground text-xs mb-3">
@@ -350,6 +503,54 @@ export function DoubtManager() {
           )}
         </div>
       </div>
+
+      {/* Edit Folder Dialog */}
+      <Dialog open={isEditFolderDialogOpen} onOpenChange={setIsEditFolderDialogOpen}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Folder</DialogTitle>
+            <DialogDescription>
+              Update the folder name.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editFolderName" className="text-white">Folder Name</Label>
+              <Input
+                id="editFolderName"
+                value={editFolderName}
+                onChange={(e) => setEditFolderName(e.target.value)}
+                placeholder="Enter folder name"
+                className="input-elegant"
+              />
+            </div>
+            <Button onClick={updateFolder} disabled={!editFolderName.trim()} className="button-elegant w-full">
+              <Save className="h-4 w-4 mr-2" />
+              Update Folder
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="elegant-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{itemToDelete?.name}"? 
+              {itemToDelete?.type === 'folder' && ' This will also delete all questions in this folder.'} 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteItem} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Markdown Editor Modal */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
