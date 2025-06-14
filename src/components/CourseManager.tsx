@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Video, ArrowUp, ArrowDown } from 'lucide-react';
+import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -37,11 +36,18 @@ export function CourseManager() {
   const [elements, setElements] = useState<CourseElement[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<CourseElement | null>(null);
+  const [editingElement, setEditingElement] = useState<CourseElement | null>(null);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [isElementDialogOpen, setIsElementDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newElement, setNewElement] = useState({
+    title: '',
+    google_drive_link: '',
+    description: '',
+  });
+  const [editElement, setEditElement] = useState({
     title: '',
     google_drive_link: '',
     description: '',
@@ -103,6 +109,7 @@ export function CourseManager() {
         .insert({
           name: newFolderName.trim(),
           user_id: user.id,
+          parent_folder_id: selectedFolder, // Support nested folders
         });
 
       if (error) throw error;
@@ -128,7 +135,6 @@ export function CourseManager() {
     if (!newElement.title.trim() || !selectedFolder || !user) return;
 
     try {
-      // Get the next order number
       const folderElements = elements.filter(e => e.folder_id === selectedFolder);
       const nextOrder = folderElements.length > 0 
         ? Math.max(...folderElements.map(e => e.course_order)) + 1 
@@ -159,6 +165,62 @@ export function CourseManager() {
       toast({
         title: "Error",
         description: "Failed to create course element.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateElement = async () => {
+    if (!editingElement || !editElement.title.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('course_elements')
+        .update({
+          title: editElement.title.trim(),
+          google_drive_link: editElement.google_drive_link.trim() || null,
+          description: editElement.description.trim(),
+        })
+        .eq('id', editingElement.id);
+
+      if (error) throw error;
+
+      setIsEditDialogOpen(false);
+      setEditingElement(null);
+      fetchElements();
+      toast({
+        title: "Success",
+        description: "Course element updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating element:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update course element.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteElement = async (elementId: string) => {
+    try {
+      const { error } = await supabase
+        .from('course_elements')
+        .delete()
+        .eq('id', elementId);
+
+      if (error) throw error;
+
+      fetchElements();
+      toast({
+        title: "Success",
+        description: "Course element deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting element:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete course element.",
         variant: "destructive",
       });
     }
@@ -209,6 +271,44 @@ export function CourseManager() {
   const getEmbedUrl = (driveUrl: string) => {
     const videoId = extractGoogleDriveVideoId(driveUrl);
     return videoId ? `https://drive.google.com/file/d/${videoId}/preview` : null;
+  };
+
+  const openEditDialog = (element: CourseElement) => {
+    setEditingElement(element);
+    setEditElement({
+      title: element.title,
+      google_drive_link: element.google_drive_link || '',
+      description: element.description,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
+    const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
+    
+    return childFolders.map((folder) => (
+      <div key={folder.id} style={{ marginLeft: `${level * 20}px` }}>
+        <Card 
+          className={`elegant-card cursor-pointer transition-all hover:scale-105 mb-2 ${
+            selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
+          }`}
+          onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white text-sm flex items-center">
+              {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
+              {folder.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-xs">
+              {elements.filter(e => e.folder_id === folder.id).length} elements
+            </p>
+          </CardContent>
+        </Card>
+        {renderFolderTree(folder.id, level + 1)}
+      </div>
+    ));
   };
 
   const filteredElements = selectedFolder
@@ -319,27 +419,7 @@ export function CourseManager() {
         <div className="lg:col-span-1">
           <h3 className="text-lg font-semibold text-white mb-4">Courses</h3>
           <div className="space-y-2">
-            {folders.map((folder) => (
-              <Card 
-                key={folder.id} 
-                className={`elegant-card cursor-pointer transition-all hover:scale-105 ${
-                  selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-white text-sm flex items-center">
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    {folder.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-xs">
-                    {elements.filter(e => e.folder_id === folder.id).length} elements
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            {renderFolderTree()}
           </div>
         </div>
 
@@ -362,20 +442,18 @@ export function CourseManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => moveElement(element, 'up')}
-                            disabled={index === 0}
+                            onClick={() => openEditDialog(element)}
                             className="button-elegant-outline h-8 w-8 p-0"
                           >
-                            <ArrowUp className="h-3 w-3" />
+                            <Edit className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => moveElement(element, 'down')}
-                            disabled={index === filteredElements.length - 1}
-                            className="button-elegant-outline h-8 w-8 p-0"
+                            onClick={() => deleteElement(element.id)}
+                            className="button-elegant-outline h-8 w-8 p-0 hover:bg-red-500"
                           >
-                            <ArrowDown className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -412,6 +490,47 @@ export function CourseManager() {
         </div>
       </div>
 
+      {/* Edit Element Modal */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Course Element</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editTitle" className="text-white">Title</Label>
+              <Input
+                id="editTitle"
+                value={editElement.title}
+                onChange={(e) => setEditElement({ ...editElement, title: e.target.value })}
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDriveLink" className="text-white">Google Drive Video Link</Label>
+              <Input
+                id="editDriveLink"
+                value={editElement.google_drive_link}
+                onChange={(e) => setEditElement({ ...editElement, google_drive_link: e.target.value })}
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDescription" className="text-white">Description</Label>
+              <Textarea
+                id="editDescription"
+                value={editElement.description}
+                onChange={(e) => setEditElement({ ...editElement, description: e.target.value })}
+                className="input-elegant"
+              />
+            </div>
+            <Button onClick={updateElement} className="button-elegant w-full">
+              Update Element
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Video Viewer Modal */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card">
@@ -419,16 +538,17 @@ export function CourseManager() {
             <DialogTitle className="text-white">{selectedElement?.title}</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden rounded-lg">
             {selectedElement?.google_drive_link && getEmbedUrl(selectedElement.google_drive_link) ? (
               <iframe
                 src={getEmbedUrl(selectedElement.google_drive_link)!}
-                className="w-full h-full rounded-lg border border-white/20"
+                className="w-full h-full border-0 rounded-lg"
                 title={selectedElement.title}
                 allowFullScreen
+                style={{ aspectRatio: '16/9' }}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex items-center justify-center h-full text-muted-foreground bg-gray-900 rounded-lg">
                 No valid video link available
               </div>
             )}

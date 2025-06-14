@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Video, CheckSquare, Trash2, Edit, Youtube } from 'lucide-react';
+import { FolderOpen, Plus, Video, CheckSquare, Trash2, Edit, Youtube, Folder } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -49,9 +49,13 @@ export function YoutubeManager() {
   const [videos, setVideos] = useState<YoutubeVideo[]>([]);
   const [todos, setTodos] = useState<YoutubeTodo[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [editingVideo, setEditingVideo] = useState<YoutubeVideo | null>(null);
+  const [editingTodo, setEditingTodo] = useState<YoutubeTodo | null>(null);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const [isTodoDialogOpen, setIsTodoDialogOpen] = useState(false);
+  const [isEditVideoDialogOpen, setIsEditVideoDialogOpen] = useState(false);
+  const [isEditTodoDialogOpen, setIsEditTodoDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newVideo, setNewVideo] = useState({
     title: '',
@@ -60,6 +64,17 @@ export function YoutubeManager() {
     status: 'pending',
   });
   const [newTodo, setNewTodo] = useState({
+    title: '',
+    content: '',
+    status: 'pending',
+  });
+  const [editVideo, setEditVideo] = useState({
+    title: '',
+    content: '',
+    youtube_url: '',
+    status: 'pending',
+  });
+  const [editTodo, setEditTodo] = useState({
     title: '',
     content: '',
     status: 'pending',
@@ -141,6 +156,7 @@ export function YoutubeManager() {
         .insert({
           name: newFolderName.trim(),
           user_id: user.id,
+          parent_folder_id: selectedFolder, // Support nested folders
         });
 
       if (error) throw error;
@@ -229,50 +245,181 @@ export function YoutubeManager() {
     }
   };
 
-  const updateVideoStatus = async (videoId: string, status: string) => {
+  const updateVideo = async () => {
+    if (!editingVideo || !editVideo.title.trim()) return;
+
     try {
       const { error } = await supabase
         .from('youtube_videos')
-        .update({ status })
-        .eq('id', videoId);
+        .update({
+          title: editVideo.title.trim(),
+          content: editVideo.content.trim(),
+          youtube_url: editVideo.youtube_url.trim() || null,
+          status: editVideo.status,
+        })
+        .eq('id', editingVideo.id);
 
       if (error) throw error;
+
+      setIsEditVideoDialogOpen(false);
+      setEditingVideo(null);
       fetchVideos();
       toast({
         title: "Success",
-        description: "Video status updated.",
+        description: "Video updated successfully.",
       });
     } catch (error) {
-      console.error('Error updating video status:', error);
+      console.error('Error updating video:', error);
       toast({
         title: "Error",
-        description: "Failed to update video status.",
+        description: "Failed to update video.",
         variant: "destructive",
       });
     }
   };
 
-  const updateTodoStatus = async (todoId: string, status: string) => {
+  const updateTodo = async () => {
+    if (!editingTodo || !editTodo.title.trim()) return;
+
     try {
       const { error } = await supabase
         .from('youtube_todos')
-        .update({ status })
-        .eq('id', todoId);
+        .update({
+          title: editTodo.title.trim(),
+          content: editTodo.content.trim(),
+          status: editTodo.status,
+        })
+        .eq('id', editingTodo.id);
 
       if (error) throw error;
+
+      setIsEditTodoDialogOpen(false);
+      setEditingTodo(null);
       fetchTodos();
       toast({
         title: "Success",
-        description: "Todo status updated.",
+        description: "Todo updated successfully.",
       });
     } catch (error) {
-      console.error('Error updating todo status:', error);
+      console.error('Error updating todo:', error);
       toast({
         title: "Error",
-        description: "Failed to update todo status.",
+        description: "Failed to update todo.",
         variant: "destructive",
       });
     }
+  };
+
+  const deleteVideo = async (videoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('youtube_videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      fetchVideos();
+      toast({
+        title: "Success",
+        description: "Video deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete video.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteTodo = async (todoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('youtube_todos')
+        .delete()
+        .eq('id', todoId);
+
+      if (error) throw error;
+
+      fetchTodos();
+      toast({
+        title: "Success",
+        description: "Todo deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting todo:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete todo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleTodoStatus = async (todo: YoutubeTodo) => {
+    const newStatus = todo.status === 'completed' ? 'pending' : 'completed';
+    try {
+      const { error } = await supabase
+        .from('youtube_todos')
+        .update({ status: newStatus })
+        .eq('id', todo.id);
+
+      if (error) throw error;
+      fetchTodos();
+    } catch (error) {
+      console.error('Error updating todo status:', error);
+    }
+  };
+
+  const openEditVideoDialog = (video: YoutubeVideo) => {
+    setEditingVideo(video);
+    setEditVideo({
+      title: video.title,
+      content: video.content || '',
+      youtube_url: video.youtube_url || '',
+      status: video.status,
+    });
+    setIsEditVideoDialogOpen(true);
+  };
+
+  const openEditTodoDialog = (todo: YoutubeTodo) => {
+    setEditingTodo(todo);
+    setEditTodo({
+      title: todo.title,
+      content: todo.content || '',
+      status: todo.status,
+    });
+    setIsEditTodoDialogOpen(true);
+  };
+
+  const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
+    const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
+    
+    return childFolders.map((folder) => (
+      <div key={folder.id} style={{ marginLeft: `${level * 20}px` }}>
+        <Card 
+          className={`elegant-card cursor-pointer transition-all hover:scale-105 mb-2 ${
+            selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
+          }`}
+          onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white text-sm flex items-center">
+              {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
+              {folder.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-xs">
+              {videos.filter(v => v.folder_id === folder.id).length} videos, {todos.filter(t => t.folder_id === folder.id).length} todos
+            </p>
+          </CardContent>
+        </Card>
+        {renderFolderTree(folder.id, level + 1)}
+      </div>
+    ));
   };
 
   const filteredVideos = selectedFolder
@@ -282,6 +429,9 @@ export function YoutubeManager() {
   const filteredTodos = selectedFolder
     ? todos.filter(todo => todo.folder_id === selectedFolder)
     : [];
+
+  const completedVideos = filteredVideos.filter(v => v.status === 'completed').length;
+  const completedTodos = filteredTodos.filter(t => t.status === 'completed').length;
 
   return (
     <div className="space-y-6">
@@ -455,31 +605,52 @@ export function YoutubeManager() {
         </div>
       </div>
 
+      {/* Progress Section */}
+      {selectedFolder && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Card className="elegant-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white text-lg">Video Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Completed Videos</span>
+                <span className="text-white font-bold">{completedVideos}/{filteredVideos.length}</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${filteredVideos.length > 0 ? (completedVideos / filteredVideos.length) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="elegant-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white text-lg">Todo Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Completed Todos</span>
+                <span className="text-white font-bold">{completedTodos}/{filteredTodos.length}</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${filteredTodos.length > 0 ? (completedTodos / filteredTodos.length) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1">
           <h3 className="text-lg font-semibold text-white mb-4">Folders</h3>
           <div className="space-y-2">
-            {folders.map((folder) => (
-              <Card 
-                key={folder.id} 
-                className={`elegant-card cursor-pointer transition-all hover:scale-105 ${
-                  selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-white text-sm flex items-center">
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    {folder.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-xs">
-                    {videos.filter(v => v.folder_id === folder.id).length} videos, {todos.filter(t => t.folder_id === folder.id).length} todos
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            {renderFolderTree()}
           </div>
         </div>
 
@@ -498,6 +669,22 @@ export function YoutubeManager() {
                             {video.title}
                           </div>
                           <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditVideoDialog(video)}
+                              className="button-elegant-outline h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteVideo(video.id)}
+                              className="button-elegant-outline h-8 w-8 p-0 hover:bg-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                             <Select value={video.status} onValueChange={(value) => updateVideoStatus(video.id, value)}>
                               <SelectTrigger className="w-32 h-8">
                                 <SelectValue />
@@ -541,20 +728,33 @@ export function YoutubeManager() {
                       <CardHeader className="pb-2">
                         <CardTitle className="text-white text-sm flex items-center justify-between">
                           <div className="flex items-center">
+                            <Checkbox
+                              checked={todo.status === 'completed'}
+                              onCheckedChange={() => toggleTodoStatus(todo)}
+                              className="mr-3"
+                            />
                             <CheckSquare className="h-4 w-4 mr-2" />
-                            {todo.title}
+                            <span className={todo.status === 'completed' ? 'line-through opacity-60' : ''}>
+                              {todo.title}
+                            </span>
                           </div>
                           <div className="flex gap-2">
-                            <Select value={todo.status} onValueChange={(value) => updateTodoStatus(todo.id, value)}>
-                              <SelectTrigger className="w-32 h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in-progress">In Progress</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditTodoDialog(todo)}
+                              className="button-elegant-outline h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteTodo(todo.id)}
+                              className="button-elegant-outline h-8 w-8 p-0 hover:bg-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </CardTitle>
                       </CardHeader>
@@ -577,6 +777,129 @@ export function YoutubeManager() {
           )}
         </div>
       </div>
+
+      {/* Edit Dialogs */}
+      <Dialog open={isEditVideoDialogOpen} onOpenChange={setIsEditVideoDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="button-elegant-outline">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Video
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Video</DialogTitle>
+            <DialogDescription>
+              Update the details of the selected video.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="videoTitle" className="text-white">Title</Label>
+              <Input
+                id="videoTitle"
+                value={editVideo.title}
+                onChange={(e) => setEditVideo({ ...editVideo, title: e.target.value })}
+                placeholder="Enter video title"
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="youtubeUrl" className="text-white">YouTube URL</Label>
+              <Input
+                id="youtubeUrl"
+                value={editVideo.youtube_url}
+                onChange={(e) => setEditVideo({ ...editVideo, youtube_url: e.target.value })}
+                placeholder="Enter YouTube URL"
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="videoContent" className="text-white">Notes</Label>
+              <Textarea
+                id="videoContent"
+                value={editVideo.content}
+                onChange={(e) => setEditVideo({ ...editVideo, content: e.target.value })}
+                placeholder="Enter notes about the video"
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="videoStatus" className="text-white">Status</Label>
+              <Select value={editVideo.status} onValueChange={(value) => setEditVideo({ ...editVideo, status: value })}>
+                <SelectTrigger className="input-elegant">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="watching">Watching</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={updateVideo} disabled={!editVideo.title.trim()} className="button-elegant w-full">
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Update Video
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditTodoDialogOpen} onOpenChange={setIsEditTodoDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="button-elegant-outline">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Todo
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Todo</DialogTitle>
+            <DialogDescription>
+              Update the details of the selected todo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="todoTitle" className="text-white">Title</Label>
+              <Input
+                id="todoTitle"
+                value={editTodo.title}
+                onChange={(e) => setEditTodo({ ...editTodo, title: e.target.value })}
+                placeholder="Enter todo title"
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="todoContent" className="text-white">Description</Label>
+              <Textarea
+                id="todoContent"
+                value={editTodo.content}
+                onChange={(e) => setEditTodo({ ...editTodo, content: e.target.value })}
+                placeholder="Enter todo description"
+                className="input-elegant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="todoStatus" className="text-white">Status</Label>
+              <Select value={editTodo.status} onValueChange={(value) => setEditTodo({ ...editTodo, status: value })}>
+                <SelectTrigger className="input-elegant">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={updateTodo} disabled={!editTodo.title.trim()} className="button-elegant w-full">
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Update Todo
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
