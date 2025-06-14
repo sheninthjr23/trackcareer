@@ -308,13 +308,38 @@ export function DoubtManager() {
     : [];
 
   const renderMarkdownPreview = (content: string) => {
-    return content
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+    if (!content.trim()) {
+      return '<p class="text-muted-foreground">No content yet. Start writing in the editor...</p>';
+    }
+
+    let html = content
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-white mb-2 mt-4">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-white mb-3 mt-4">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-white mb-4 mt-4">$1</h1>')
+      // Bold and italic
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold text-white">$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em class="italic text-gray-300">$1</em>')
+      // Code blocks
+      .replace(/```(.*?)```/gims, '<pre class="bg-gray-800 p-3 rounded-md my-3 overflow-x-auto"><code class="text-green-400 text-sm">$1</code></pre>')
+      // Inline code
+      .replace(/`(.*?)`/gim, '<code class="bg-gray-800 px-2 py-1 rounded text-green-400 text-sm">$1</code>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Lists (unordered)
+      .replace(/^\s*[-*+]\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1">• $1</li>')
+      // Lists (ordered)
+      .replace(/^\s*\d+\.\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1 list-decimal">$1</li>')
+      // Line breaks and paragraphs
+      .replace(/\n\n/gim, '</p><p class="text-gray-300 mb-3">')
       .replace(/\n/gim, '<br>');
+
+    // Wrap in paragraph tags if not already wrapped
+    if (!html.startsWith('<h') && !html.startsWith('<p') && !html.startsWith('<pre') && !html.startsWith('<li')) {
+      html = `<p class="text-gray-300 mb-3">${html}</p>`;
+    }
+
+    return html;
   };
 
   return (
@@ -575,14 +600,33 @@ export function DoubtManager() {
               <Textarea
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
-                placeholder="Write your notes in markdown..."
+                placeholder="Write your notes in markdown...
+
+Examples:
+# Heading 1
+## Heading 2
+### Heading 3
+
+**Bold text**
+*Italic text*
+
+`inline code`
+
+```
+code block
+```
+
+- Bullet list
+1. Numbered list
+
+[Link text](https://example.com)"
                 className="flex-1 resize-none input-elegant font-mono text-sm"
               />
             </div>
             <div className="flex flex-col">
               <Label className="text-white mb-2">Preview</Label>
               <div 
-                className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
+                className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto"
                 dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
               />
             </div>
