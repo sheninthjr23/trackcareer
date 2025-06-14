@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,11 +38,14 @@ export function CourseManager() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<CourseElement | null>(null);
   const [editingElement, setEditingElement] = useState<CourseElement | null>(null);
+  const [editingFolder, setEditingFolder] = useState<CourseFolder | null>(null);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [isElementDialogOpen, setIsElementDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [editFolderName, setEditFolderName] = useState('');
   const [newElement, setNewElement] = useState({
     title: '',
     google_drive_link: '',
@@ -109,7 +113,7 @@ export function CourseManager() {
         .insert({
           name: newFolderName.trim(),
           user_id: user.id,
-          parent_folder_id: selectedFolder, // Support nested folders
+          parent_folder_id: selectedFolder,
         });
 
       if (error) throw error;
@@ -126,6 +130,82 @@ export function CourseManager() {
       toast({
         title: "Error",
         description: "Failed to create folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateFolder = async () => {
+    if (!editingFolder || !editFolderName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('course_folders')
+        .update({ name: editFolderName.trim() })
+        .eq('id', editingFolder.id);
+
+      if (error) throw error;
+
+      setIsEditFolderDialogOpen(false);
+      setEditingFolder(null);
+      setEditFolderName('');
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Course folder updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    try {
+      // First check if folder has any content
+      const [elementsInFolder, subFolders] = await Promise.all([
+        supabase.from('course_elements').select('id').eq('folder_id', folderId),
+        supabase.from('course_folders').select('id').eq('parent_folder_id', folderId)
+      ]);
+
+      const hasContent = 
+        (elementsInFolder.data && elementsInFolder.data.length > 0) ||
+        (subFolders.data && subFolders.data.length > 0);
+
+      if (hasContent) {
+        toast({
+          title: "Cannot Delete",
+          description: "Folder contains course elements or subfolders. Please remove them first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('course_folders')
+        .delete()
+        .eq('id', folderId);
+
+      if (error) throw error;
+
+      if (selectedFolder === folderId) {
+        setSelectedFolder(null);
+      }
+      
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Course folder deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder.",
         variant: "destructive",
       });
     }
@@ -283,6 +363,12 @@ export function CourseManager() {
     setIsEditDialogOpen(true);
   };
 
+  const openEditFolderDialog = (folder: CourseFolder) => {
+    setEditingFolder(folder);
+    setEditFolderName(folder.name);
+    setIsEditFolderDialogOpen(true);
+  };
+
   const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
     const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
     
@@ -295,9 +381,29 @@ export function CourseManager() {
           onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-white text-sm flex items-center">
-              {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
-              {folder.name}
+            <CardTitle className="text-white text-sm flex items-center justify-between">
+              <div className="flex items-center">
+                {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
+                {folder.name}
+              </div>
+              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditFolderDialog(folder)}
+                  className="button-elegant-outline h-6 w-6 p-0"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => deleteFolder(folder.id)}
+                  className="button-elegant-outline h-6 w-6 p-0 hover:bg-red-500"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -329,14 +435,19 @@ export function CourseManager() {
             <DialogTrigger asChild>
               <Button variant="outline" className="button-elegant-outline">
                 <FolderOpen className="h-4 w-4 mr-2" />
-                New Course
+                {selectedFolder ? 'New Subcourse' : 'New Course'}
               </Button>
             </DialogTrigger>
             <DialogContent className="elegant-card">
               <DialogHeader>
-                <DialogTitle className="text-white">Create New Course</DialogTitle>
+                <DialogTitle className="text-white">
+                  {selectedFolder ? 'Create New Subcourse' : 'Create New Course'}
+                </DialogTitle>
                 <DialogDescription>
-                  Create a new course folder to organize your learning content.
+                  {selectedFolder 
+                    ? `Create a new subcourse inside "${folders.find(f => f.id === selectedFolder)?.name}"`
+                    : 'Create a new course folder to organize your learning content.'
+                  }
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -352,7 +463,7 @@ export function CourseManager() {
                 </div>
                 <Button onClick={createFolder} disabled={!newFolderName.trim()} className="button-elegant w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Course
+                  Create {selectedFolder ? 'Subcourse' : 'Course'}
                 </Button>
               </div>
             </DialogContent>
@@ -489,6 +600,29 @@ export function CourseManager() {
           )}
         </div>
       </div>
+
+      {/* Edit Folder Dialog */}
+      <Dialog open={isEditFolderDialogOpen} onOpenChange={setIsEditFolderDialogOpen}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Course Folder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editCourseName" className="text-white">Course Name</Label>
+              <Input
+                id="editCourseName"
+                value={editFolderName}
+                onChange={(e) => setEditFolderName(e.target.value)}
+                className="input-elegant"
+              />
+            </div>
+            <Button onClick={updateFolder} className="button-elegant w-full">
+              Update Course
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Element Modal */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

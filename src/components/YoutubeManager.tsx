@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,12 +52,15 @@ export function YoutubeManager() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [editingVideo, setEditingVideo] = useState<YoutubeVideo | null>(null);
   const [editingTodo, setEditingTodo] = useState<YoutubeTodo | null>(null);
+  const [editingFolder, setEditingFolder] = useState<YoutubeFolder | null>(null);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const [isTodoDialogOpen, setIsTodoDialogOpen] = useState(false);
   const [isEditVideoDialogOpen, setIsEditVideoDialogOpen] = useState(false);
   const [isEditTodoDialogOpen, setIsEditTodoDialogOpen] = useState(false);
+  const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [editFolderName, setEditFolderName] = useState('');
   const [newVideo, setNewVideo] = useState({
     title: '',
     content: '',
@@ -156,7 +160,7 @@ export function YoutubeManager() {
         .insert({
           name: newFolderName.trim(),
           user_id: user.id,
-          parent_folder_id: selectedFolder, // Support nested folders
+          parent_folder_id: selectedFolder,
         });
 
       if (error) throw error;
@@ -173,6 +177,84 @@ export function YoutubeManager() {
       toast({
         title: "Error",
         description: "Failed to create folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateFolder = async () => {
+    if (!editingFolder || !editFolderName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('youtube_folders')
+        .update({ name: editFolderName.trim() })
+        .eq('id', editingFolder.id);
+
+      if (error) throw error;
+
+      setIsEditFolderDialogOpen(false);
+      setEditingFolder(null);
+      setEditFolderName('');
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Folder updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    try {
+      // First check if folder has any content
+      const [videosInFolder, todosInFolder, subFolders] = await Promise.all([
+        supabase.from('youtube_videos').select('id').eq('folder_id', folderId),
+        supabase.from('youtube_todos').select('id').eq('folder_id', folderId),
+        supabase.from('youtube_folders').select('id').eq('parent_folder_id', folderId)
+      ]);
+
+      const hasContent = 
+        (videosInFolder.data && videosInFolder.data.length > 0) ||
+        (todosInFolder.data && todosInFolder.data.length > 0) ||
+        (subFolders.data && subFolders.data.length > 0);
+
+      if (hasContent) {
+        toast({
+          title: "Cannot Delete",
+          description: "Folder contains videos, todos, or subfolders. Please remove them first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('youtube_folders')
+        .delete()
+        .eq('id', folderId);
+
+      if (error) throw error;
+
+      if (selectedFolder === folderId) {
+        setSelectedFolder(null);
+      }
+      
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Folder deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder.",
         variant: "destructive",
       });
     }
@@ -273,6 +355,25 @@ export function YoutubeManager() {
       toast({
         title: "Error",
         description: "Failed to update video.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateVideoStatus = async (videoId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('youtube_videos')
+        .update({ status: newStatus })
+        .eq('id', videoId);
+
+      if (error) throw error;
+      fetchVideos();
+    } catch (error) {
+      console.error('Error updating video status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update video status.",
         variant: "destructive",
       });
     }
@@ -394,6 +495,12 @@ export function YoutubeManager() {
     setIsEditTodoDialogOpen(true);
   };
 
+  const openEditFolderDialog = (folder: YoutubeFolder) => {
+    setEditingFolder(folder);
+    setEditFolderName(folder.name);
+    setIsEditFolderDialogOpen(true);
+  };
+
   const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
     const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
     
@@ -406,9 +513,29 @@ export function YoutubeManager() {
           onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
         >
           <CardHeader className="pb-2">
-            <CardTitle className="text-white text-sm flex items-center">
-              {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
-              {folder.name}
+            <CardTitle className="text-white text-sm flex items-center justify-between">
+              <div className="flex items-center">
+                {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
+                {folder.name}
+              </div>
+              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditFolderDialog(folder)}
+                  className="button-elegant-outline h-6 w-6 p-0"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => deleteFolder(folder.id)}
+                  className="button-elegant-outline h-6 w-6 p-0 hover:bg-red-500"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -448,14 +575,19 @@ export function YoutubeManager() {
             <DialogTrigger asChild>
               <Button variant="outline" className="button-elegant-outline">
                 <FolderOpen className="h-4 w-4 mr-2" />
-                New Folder
+                {selectedFolder ? 'New Subfolder' : 'New Folder'}
               </Button>
             </DialogTrigger>
             <DialogContent className="elegant-card">
               <DialogHeader>
-                <DialogTitle className="text-white">Create New Folder</DialogTitle>
+                <DialogTitle className="text-white">
+                  {selectedFolder ? 'Create New Subfolder' : 'Create New Folder'}
+                </DialogTitle>
                 <DialogDescription>
-                  Create a new folder to organize your YouTube content.
+                  {selectedFolder 
+                    ? `Create a new subfolder inside "${folders.find(f => f.id === selectedFolder)?.name}"`
+                    : 'Create a new folder to organize your YouTube content.'
+                  }
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -471,7 +603,7 @@ export function YoutubeManager() {
                 </div>
                 <Button onClick={createFolder} disabled={!newFolderName.trim()} className="button-elegant w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Folder
+                  Create {selectedFolder ? 'Subfolder' : 'Folder'}
                 </Button>
               </div>
             </DialogContent>
@@ -778,54 +910,65 @@ export function YoutubeManager() {
         </div>
       </div>
 
-      {/* Edit Dialogs */}
-      <Dialog open={isEditVideoDialogOpen} onOpenChange={setIsEditVideoDialogOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="button-elegant-outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Video
-          </Button>
-        </DialogTrigger>
+      {/* Edit Folder Dialog */}
+      <Dialog open={isEditFolderDialogOpen} onOpenChange={setIsEditFolderDialogOpen}>
         <DialogContent className="elegant-card">
           <DialogHeader>
-            <DialogTitle className="text-white">Edit Video</DialogTitle>
-            <DialogDescription>
-              Update the details of the selected video.
-            </DialogDescription>
+            <DialogTitle className="text-white">Edit Folder</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="videoTitle" className="text-white">Title</Label>
+              <Label htmlFor="editFolderName" className="text-white">Folder Name</Label>
               <Input
-                id="videoTitle"
+                id="editFolderName"
+                value={editFolderName}
+                onChange={(e) => setEditFolderName(e.target.value)}
+                className="input-elegant"
+              />
+            </div>
+            <Button onClick={updateFolder} className="button-elegant w-full">
+              Update Folder
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Video Dialog */}
+      <Dialog open={isEditVideoDialogOpen} onOpenChange={setIsEditVideoDialogOpen}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Video</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editVideoTitle" className="text-white">Title</Label>
+              <Input
+                id="editVideoTitle"
                 value={editVideo.title}
                 onChange={(e) => setEditVideo({ ...editVideo, title: e.target.value })}
-                placeholder="Enter video title"
                 className="input-elegant"
               />
             </div>
             <div>
-              <Label htmlFor="youtubeUrl" className="text-white">YouTube URL</Label>
+              <Label htmlFor="editYoutubeUrl" className="text-white">YouTube URL</Label>
               <Input
-                id="youtubeUrl"
+                id="editYoutubeUrl"
                 value={editVideo.youtube_url}
                 onChange={(e) => setEditVideo({ ...editVideo, youtube_url: e.target.value })}
-                placeholder="Enter YouTube URL"
                 className="input-elegant"
               />
             </div>
             <div>
-              <Label htmlFor="videoContent" className="text-white">Notes</Label>
+              <Label htmlFor="editVideoContent" className="text-white">Notes</Label>
               <Textarea
-                id="videoContent"
+                id="editVideoContent"
                 value={editVideo.content}
                 onChange={(e) => setEditVideo({ ...editVideo, content: e.target.value })}
-                placeholder="Enter notes about the video"
                 className="input-elegant"
               />
             </div>
             <div>
-              <Label htmlFor="videoStatus" className="text-white">Status</Label>
+              <Label htmlFor="editVideoStatus" className="text-white">Status</Label>
               <Select value={editVideo.status} onValueChange={(value) => setEditVideo({ ...editVideo, status: value })}>
                 <SelectTrigger className="input-elegant">
                   <SelectValue placeholder="Select status" />
@@ -838,50 +981,39 @@ export function YoutubeManager() {
               </Select>
             </div>
             <Button onClick={updateVideo} disabled={!editVideo.title.trim()} className="button-elegant w-full">
-              <CheckSquare className="h-4 w-4 mr-2" />
               Update Video
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Edit Todo Dialog */}
       <Dialog open={isEditTodoDialogOpen} onOpenChange={setIsEditTodoDialogOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="button-elegant-outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Todo
-          </Button>
-        </DialogTrigger>
         <DialogContent className="elegant-card">
           <DialogHeader>
             <DialogTitle className="text-white">Edit Todo</DialogTitle>
-            <DialogDescription>
-              Update the details of the selected todo.
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="todoTitle" className="text-white">Title</Label>
+              <Label htmlFor="editTodoTitle" className="text-white">Title</Label>
               <Input
-                id="todoTitle"
+                id="editTodoTitle"
                 value={editTodo.title}
                 onChange={(e) => setEditTodo({ ...editTodo, title: e.target.value })}
-                placeholder="Enter todo title"
                 className="input-elegant"
               />
             </div>
             <div>
-              <Label htmlFor="todoContent" className="text-white">Description</Label>
+              <Label htmlFor="editTodoContent" className="text-white">Description</Label>
               <Textarea
-                id="todoContent"
+                id="editTodoContent"
                 value={editTodo.content}
                 onChange={(e) => setEditTodo({ ...editTodo, content: e.target.value })}
-                placeholder="Enter todo description"
                 className="input-elegant"
               />
             </div>
             <div>
-              <Label htmlFor="todoStatus" className="text-white">Status</Label>
+              <Label htmlFor="editTodoStatus" className="text-white">Status</Label>
               <Select value={editTodo.status} onValueChange={(value) => setEditTodo({ ...editTodo, status: value })}>
                 <SelectTrigger className="input-elegant">
                   <SelectValue placeholder="Select status" />
@@ -894,7 +1026,6 @@ export function YoutubeManager() {
               </Select>
             </div>
             <Button onClick={updateTodo} disabled={!editTodo.title.trim()} className="button-elegant w-full">
-              <CheckSquare className="h-4 w-4 mr-2" />
               Update Todo
             </Button>
           </div>
