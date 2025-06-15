@@ -610,18 +610,8 @@ export function YoutubeManager() {
     <div className="space-y-8">
       {/* Hero Section */}
       <div className="text-center py-12 bg-white/5 backdrop-blur rounded-3xl border border-white/10">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="p-4 bg-white rounded-2xl">
-            <Youtube className="h-12 w-12 text-black" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">YouTube Learning Hub</h1>
-            <p className="text-xl text-gray-300">Transform your YouTube consumption into structured learning</p>
-          </div>
-        </div>
-        
         {/* Global Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
           <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
             <div className="flex items-center justify-center gap-2 mb-2">
               <FolderOpen className="h-5 w-5 text-white" />
