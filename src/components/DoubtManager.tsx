@@ -621,10 +621,10 @@ export function DoubtManager() {
 
       {/* Enhanced Markdown Editor Modal */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-6xl h-[90vh] elegant-card">
-          <DialogHeader>
+        <DialogContent className="max-w-7xl h-[90vh] elegant-card p-0">
+          <DialogHeader className="px-6 py-4 border-b border-white/20">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-white">{selectedQuestion?.title}</DialogTitle>
+              <DialogTitle className="text-white text-xl">{selectedQuestion?.title}</DialogTitle>
               <Button
                 onClick={saveMarkdown}
                 disabled={saving}
@@ -636,20 +636,24 @@ export function DoubtManager() {
             </div>
           </DialogHeader>
           
-          <div className="flex-1 grid grid-cols-2 gap-4 overflow-hidden">
-            <div className="flex flex-col">
-              <Label className="text-white mb-2">Markdown Editor</Label>
+          <div className="flex-1 grid grid-cols-2 gap-0 overflow-hidden">
+            <div className="flex flex-col border-r border-white/20">
+              <div className="px-4 py-3 bg-gray-800/50 border-b border-white/20">
+                <Label className="text-white font-medium">Markdown Editor</Label>
+              </div>
               <Textarea
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
                 placeholder="Write your notes in markdown format..."
-                className="flex-1 resize-none input-elegant font-mono text-sm"
+                className="flex-1 resize-none border-0 rounded-none bg-gray-900/50 text-gray-100 font-mono text-sm p-4 focus:ring-0 focus:outline-none"
               />
             </div>
             <div className="flex flex-col">
-              <Label className="text-white mb-2">Live Preview</Label>
+              <div className="px-4 py-3 bg-gray-800/50 border-b border-white/20">
+                <Label className="text-white font-medium">Live Preview</Label>
+              </div>
               <div 
-                className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
+                className="flex-1 p-4 bg-gray-900/30 overflow-auto prose prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
               />
             </div>
