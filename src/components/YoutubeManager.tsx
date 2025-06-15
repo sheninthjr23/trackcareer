@@ -621,21 +621,21 @@ export function YoutubeManager() {
           </div>
           <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Video className="h-5 w-5 text-white" />
+              <Youtube className="h-5 w-5 text-red-500" />
               <span className="text-2xl font-bold text-white">{totalVideos}</span>
             </div>
             <p className="text-sm text-gray-300">Total Videos</p>
           </div>
           <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <CheckCircle className="h-5 w-5 text-white" />
+              <CheckCircle className="h-5 w-5 text-green-500" />
               <span className="text-2xl font-bold text-white">{totalCompletedVideos}</span>
             </div>
             <p className="text-sm text-gray-300">Completed Videos</p>
           </div>
           <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Target className="h-5 w-5 text-white" />
+              <Target className="h-5 w-5 text-blue-500" />
               <span className="text-2xl font-bold text-white">{totalCompletedTodos}</span>
             </div>
             <p className="text-sm text-gray-300">Tasks Done</p>
@@ -697,15 +697,15 @@ export function YoutubeManager() {
             <>
               <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-white text-black hover:bg-gray-200">
-                    <Video className="h-4 w-4 mr-2" />
+                  <Button className="bg-red-600 text-white hover:bg-red-700 shadow-lg">
+                    <Youtube className="h-4 w-4 mr-2 text-white" />
                     Add Video
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-black/90 backdrop-blur border border-white/20 max-w-lg">
                   <DialogHeader>
                     <DialogTitle className="text-white flex items-center gap-2">
-                      <Video className="h-5 w-5 text-white" />
+                      <Youtube className="h-5 w-5 text-red-500" />
                       Add YouTube Video
                     </DialogTitle>
                     <DialogDescription className="text-gray-300">
@@ -757,7 +757,7 @@ export function YoutubeManager() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={createVideo} disabled={!newVideo.title.trim()} className="bg-white text-black hover:bg-gray-200 w-full">
+                    <Button onClick={createVideo} disabled={!newVideo.title.trim()} className="bg-red-600 text-white hover:bg-red-700 w-full">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Video
                     </Button>
@@ -835,7 +835,7 @@ export function YoutubeManager() {
           <Card className="bg-white/5 backdrop-blur border border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-white" />
+                <TrendingUp className="h-5 w-5 text-green-500" />
                 Video Progress
               </CardTitle>
             </CardHeader>
@@ -846,7 +846,7 @@ export function YoutubeManager() {
               </div>
               <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
                 <div 
-                  className="bg-white h-3 rounded-full transition-all duration-300 ease-out" 
+                  className="bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full transition-all duration-300 ease-out" 
                   style={{ width: `${filteredVideos.length > 0 ? (completedVideos / filteredVideos.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -859,7 +859,7 @@ export function YoutubeManager() {
           <Card className="bg-white/5 backdrop-blur border border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
-                <Target className="h-5 w-5 text-white" />
+                <Target className="h-5 w-5 text-blue-500" />
                 Task Progress
               </CardTitle>
             </CardHeader>
@@ -870,7 +870,7 @@ export function YoutubeManager() {
               </div>
               <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
                 <div 
-                  className="bg-white h-3 rounded-full transition-all duration-300 ease-out" 
+                  className="bg-gradient-to-r from-blue-500 to-blue-400 h-3 rounded-full transition-all duration-300 ease-out" 
                   style={{ width: `${filteredTodos.length > 0 ? (completedTodos / filteredTodos.length) * 100 : 0}%` }}
                 ></div>
               </div>
@@ -883,7 +883,7 @@ export function YoutubeManager() {
           <Card className="bg-white/5 backdrop-blur border border-white/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-white" />
+                <BookOpen className="h-5 w-5 text-purple-500" />
                 Learning Score
               </CardTitle>
             </CardHeader>
@@ -898,7 +898,7 @@ export function YoutubeManager() {
               </div>
               <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
                 <div 
-                  className="bg-white h-3 rounded-full transition-all duration-300 ease-out" 
+                  className="bg-gradient-to-r from-purple-500 to-purple-400 h-3 rounded-full transition-all duration-300 ease-out" 
                   style={{ 
                     width: `${(filteredVideos.length + filteredTodos.length) > 0 
                       ? ((completedVideos + completedTodos) / (filteredVideos.length + filteredTodos.length)) * 100 
@@ -915,7 +915,7 @@ export function YoutubeManager() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1">
           <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-            <Folder className="h-5 w-5 text-white" />
+            <Folder className="h-5 w-5 text-yellow-500" />
             Learning Folders
           </h3>
           <div className="space-y-2">
@@ -936,7 +936,7 @@ export function YoutubeManager() {
             <div className="space-y-8">
               <div>
                 <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                  <Video className="h-5 w-5 text-white" />
+                  <Youtube className="h-5 w-5 text-red-500" />
                   YouTube Videos
                 </h3>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -980,7 +980,7 @@ export function YoutubeManager() {
                               href={video.youtube_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-red-500 hover:text-red-400 text-sm transition-colors"
+                              className="flex items-center gap-2 text-red-500 hover:text-red-400 text-sm transition-colors font-medium bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 hover:border-red-500/40"
                             >
                               <Youtube className="h-4 w-4" />
                               Watch Video
@@ -1003,12 +1003,12 @@ export function YoutubeManager() {
                   {filteredVideos.length === 0 && (
                     <div className="xl:col-span-2">
                       <Card className="bg-white/5 backdrop-blur border border-white/10 text-center p-12">
-                        <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <Youtube className="h-16 w-16 text-red-500 mx-auto mb-4" />
                         <h4 className="text-white text-lg font-semibold mb-2">No videos yet</h4>
                         <p className="text-gray-300 mb-4">Start adding YouTube videos to track your learning</p>
                         <Button
                           onClick={() => setIsVideoDialogOpen(true)}
-                          className="bg-white text-black hover:bg-gray-200"
+                          className="bg-red-600 text-white hover:bg-red-700"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Video
@@ -1021,7 +1021,7 @@ export function YoutubeManager() {
 
               <div>
                 <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                  <Target className="h-5 w-5 text-white" />
+                  <Target className="h-5 w-5 text-blue-500" />
                   Learning Tasks
                 </h3>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -1072,7 +1072,7 @@ export function YoutubeManager() {
                   {filteredTodos.length === 0 && (
                     <div className="xl:col-span-2">
                       <Card className="bg-white/5 backdrop-blur border border-white/10 text-center p-12">
-                        <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <Target className="h-16 w-16 text-blue-500 mx-auto mb-4" />
                         <h4 className="text-white text-lg font-semibold mb-2">No tasks yet</h4>
                         <p className="text-gray-300 mb-4">Create learning tasks to track your progress</p>
                         <Button
@@ -1134,7 +1134,10 @@ export function YoutubeManager() {
       <Dialog open={isEditVideoDialogOpen} onOpenChange={setIsEditVideoDialogOpen}>
         <DialogContent className="bg-black/90 backdrop-blur border border-white/20">
           <DialogHeader>
-            <DialogTitle className="text-white">Edit Video</DialogTitle>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Youtube className="h-5 w-5 text-red-500" />
+              Edit Video
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -1177,7 +1180,7 @@ export function YoutubeManager() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={updateVideo} disabled={!editVideo.title.trim()} className="bg-white text-black hover:bg-gray-200 w-full">
+            <Button onClick={updateVideo} disabled={!editVideo.title.trim()} className="bg-red-600 text-white hover:bg-red-700 w-full">
               Update Video
             </Button>
           </div>
