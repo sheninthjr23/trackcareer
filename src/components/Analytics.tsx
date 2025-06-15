@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
-import { Calendar, TrendingUp, Target, Award, Activity, BarChart3 } from "lucide-react";
+import { Calendar, TrendingUp, Target, Award, Activity, BarChart3, FileText, BookOpen, CheckCircle, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ScoreBreakdownDialog } from "./ScoreBreakdownDialog";
@@ -250,7 +250,7 @@ export function Analytics() {
         </Select>
       </div>
 
-      {/* Key Metrics - Fixed alignment */}
+      {/* Key Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card 
           className="elegant-card cursor-pointer hover:shadow-lg transition-shadow"
@@ -317,7 +317,7 @@ export function Analytics() {
         </Card>
       </div>
 
-      {/* Charts Grid - Improved responsiveness */}
+      {/* Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Activity Trend */}
         <Card className="elegant-card">
@@ -328,15 +328,18 @@ export function Analytics() {
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activityTrend}>
+                <AreaChart data={activityTrend} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
                     dataKey="name" 
                     stroke="#9ca3af" 
-                    fontSize={12}
+                    fontSize={11}
                     tickMargin={8}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
-                  <YAxis stroke="#9ca3af" fontSize={12} />
+                  <YAxis stroke="#9ca3af" fontSize={12} width={30} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area 
                     type="monotone" 
@@ -380,7 +383,7 @@ export function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Progress Over Time */}
+        {/* Progress Over Time - Improved */}
         <Card className="elegant-card">
           <CardHeader>
             <CardTitle className="text-gradient">Completion Progress</CardTitle>
@@ -389,15 +392,19 @@ export function Analytics() {
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={progressOverTime}>
+                <LineChart data={progressOverTime} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                   <XAxis 
                     dataKey="name" 
                     stroke="#9ca3af" 
-                    fontSize={12}
+                    fontSize={10}
                     tickMargin={8}
+                    angle={-35}
+                    textAnchor="end"
+                    height={60}
+                    interval={0}
                   />
-                  <YAxis stroke="#9ca3af" fontSize={12} />
+                  <YAxis stroke="#9ca3af" fontSize={12} width={30} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line 
                     type="monotone" 
@@ -412,28 +419,71 @@ export function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Summary Stats */}
+        {/* Summary Stats - Completely redesigned */}
         <Card className="elegant-card">
           <CardHeader>
             <CardTitle className="text-gradient">Summary Statistics</CardTitle>
             <CardDescription>Key performance indicators</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-2 rounded bg-blue-50 dark:bg-blue-950/20">
-              <span className="text-sm font-medium">Resumes Uploaded</span>
-              <span className="text-2xl font-bold text-blue-500">{analyticsData.totalResumes}</span>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-500 text-white">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Resumes Uploaded</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">Document management</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{analyticsData.totalResumes}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center p-2 rounded bg-green-50 dark:bg-green-950/20">
-              <span className="text-sm font-medium">Courses Completed</span>
-              <span className="text-2xl font-bold text-green-500">{analyticsData.completedCourses}</span>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-green-500 text-white">
+                  <BookOpen className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">Courses Completed</p>
+                  <p className="text-xs text-green-700 dark:text-green-300">Learning progress</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-green-600 dark:text-green-400">{analyticsData.completedCourses}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center p-2 rounded bg-yellow-50 dark:bg-yellow-950/20">
-              <span className="text-sm font-medium">Activities Done</span>
-              <span className="text-2xl font-bold text-yellow-500">{analyticsData.completedActivities}</span>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-950/30 dark:to-yellow-900/30 border border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-yellow-500 text-white">
+                  <CheckCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">Activities Done</p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300">Task completion</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{analyticsData.completedActivities}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center p-2 rounded bg-purple-50 dark:bg-purple-950/20">
-              <span className="text-sm font-medium">Active Applications</span>
-              <span className="text-2xl font-bold text-purple-500">{analyticsData.activeApplications}</span>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-purple-500 text-white">
+                  <Briefcase className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-purple-900 dark:text-purple-100">Active Applications</p>
+                  <p className="text-xs text-purple-700 dark:text-purple-300">Job search progress</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{analyticsData.activeApplications}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
