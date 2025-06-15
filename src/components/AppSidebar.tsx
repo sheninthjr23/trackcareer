@@ -97,7 +97,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
                     }`}
                   >
                     <item.icon className={`h-5 w-5 shrink-0 ${
-                      activeSection === item.section ? 'text-black' : 'text-gray-400'
+                      activeSection === item.section ? 'text-gray-800' : 'text-gray-400'
                     }`} />
                     <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
                       <span className="font-medium text-sm leading-tight">{item.title}</span>
