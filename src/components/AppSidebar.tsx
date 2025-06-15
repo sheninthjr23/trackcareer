@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -88,19 +89,19 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
                   <SidebarMenuButton
                     onClick={() => setActiveSection(item.section)}
                     isActive={activeSection === item.section}
-                    className={`w-full rounded-lg transition-all duration-200 hover:bg-white/5 group ${
+                    className={`w-full rounded-lg transition-all duration-200 ${
                       activeSection === item.section 
                         ? 'bg-white text-black hover:bg-white/90' 
-                        : 'text-gray-300 hover:text-white'
+                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
                     <item.icon className={`h-5 w-5 ${
-                      activeSection === item.section ? 'text-black' : 'text-gray-400 group-hover:text-white'
+                      activeSection === item.section ? 'text-black' : 'text-gray-400'
                     }`} />
                     <div className="flex flex-col items-start">
                       <span className="font-medium">{item.title}</span>
                       <span className={`text-xs ${
-                        activeSection === item.section ? 'text-black/60' : 'text-gray-500 group-hover:text-gray-300'
+                        activeSection === item.section ? 'text-black/60' : 'text-gray-500'
                       }`}>
                         {item.description}
                       </span>
