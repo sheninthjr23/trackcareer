@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,6 +107,22 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
       return;
     }
 
+    const trimmedEmail = shareEmail.trim().toLowerCase();
+
+    // Check if this folder is already shared with this email
+    const existingShare = shares.find(share => 
+      share.shared_with_email.toLowerCase() === trimmedEmail && share.is_active
+    );
+
+    if (existingShare) {
+      toast({
+        title: "Already Shared",
+        description: `This folder is already shared with ${trimmedEmail}. You can update the permission level or remove the existing share first.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -113,18 +130,30 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
         .insert({
           folder_id: folderId,
           shared_by: user.id,
-          shared_with_email: shareEmail.trim().toLowerCase(),
+          shared_with_email: trimmedEmail,
           permission_level: permissionLevel,
         });
 
-      if (error) throw error;
+      if (error) {
+        // Handle the specific duplicate key error
+        if (error.code === '23505') {
+          toast({
+            title: "Already Shared",
+            description: `This folder is already shared with ${trimmedEmail}. Please check the existing shares below.`,
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       setShareEmail('');
       setIsShareDialogOpen(false);
       fetchFolderShares();
       toast({
         title: "Success",
-        description: `Folder shared with ${shareEmail}`,
+        description: `Folder shared with ${trimmedEmail}`,
       });
     } catch (error: any) {
       console.error('Error sharing folder:', error);
@@ -135,6 +164,39 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateSharePermission = async (shareId: string, newPermission: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update shares.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('folder_shares')
+        .update({ permission_level: newPermission })
+        .eq('id', shareId);
+
+      if (error) throw error;
+
+      fetchFolderShares();
+      toast({
+        title: "Success",
+        description: "Permission updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update permission.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -260,11 +322,22 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
                   <Card key={share.id} className="elegant-card">
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1">
                           <p className="text-white font-medium">{share.shared_with_email}</p>
-                          <p className="text-muted-foreground text-sm capitalize">
-                            {share.permission_level} access
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Select 
+                              value={share.permission_level} 
+                              onValueChange={(value) => updateSharePermission(share.id, value)}
+                            >
+                              <SelectTrigger className="h-6 text-xs w-24">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="view">View</SelectItem>
+                                <SelectItem value="edit">Edit</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                         <Button
                           size="sm"
