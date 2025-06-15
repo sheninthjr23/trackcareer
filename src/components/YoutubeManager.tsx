@@ -697,8 +697,8 @@ export function YoutubeManager() {
             <>
               <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-red-600 text-white hover:bg-red-700 shadow-lg">
-                    <Youtube className="h-4 w-4 mr-2 text-white" />
+                  <Button className="bg-white text-black hover:bg-gray-200 shadow-lg">
+                    <Youtube className="h-4 w-4 mr-2 text-red-500" />
                     Add Video
                   </Button>
                 </DialogTrigger>
@@ -757,7 +757,7 @@ export function YoutubeManager() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={createVideo} disabled={!newVideo.title.trim()} className="bg-red-600 text-white hover:bg-red-700 w-full">
+                    <Button onClick={createVideo} disabled={!newVideo.title.trim()} className="bg-white text-black hover:bg-gray-200 w-full">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Video
                     </Button>
@@ -1008,7 +1008,7 @@ export function YoutubeManager() {
                         <p className="text-gray-300 mb-4">Start adding YouTube videos to track your learning</p>
                         <Button
                           onClick={() => setIsVideoDialogOpen(true)}
-                          className="bg-red-600 text-white hover:bg-red-700"
+                          className="bg-white text-black hover:bg-gray-200"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Video
@@ -1180,7 +1180,7 @@ export function YoutubeManager() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={updateVideo} disabled={!editVideo.title.trim()} className="bg-red-600 text-white hover:bg-red-700 w-full">
+            <Button onClick={updateVideo} disabled={!editVideo.title.trim()} className="bg-white text-black hover:bg-gray-200 w-full">
               Update Video
             </Button>
           </div>
