@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Edit, Save, Trash2, MoreVertical } from 'lucide-react';
+import { FolderOpen, Plus, Edit, Save, Trash2, MoreVertical, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -62,6 +62,7 @@ export function DoubtManager() {
   const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'folder' | 'question'; id: string; name: string } | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -175,6 +176,7 @@ export function DoubtManager() {
   const openEditor = (question: DoubtQuestion) => {
     setSelectedQuestion(question);
     setMarkdownContent(question.markdown_content || '');
+    setIsEditMode(false); // Start in preview mode
     setIsEditorOpen(true);
   };
 
@@ -619,43 +621,80 @@ export function DoubtManager() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Enhanced Markdown Editor Modal with improved spacing */}
+      {/* Enhanced Markdown Editor Modal with preview-first approach */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card p-0">
           <div className="flex flex-col h-full">
-            {/* Compact header with question title and save button */}
+            {/* Header with question title and action buttons */}
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <DialogTitle className="text-white text-lg font-semibold truncate flex-1 mr-4">
                 {selectedQuestion?.title}
               </DialogTitle>
-              <Button
-                onClick={saveMarkdown}
-                disabled={saving}
-                className="button-elegant flex-shrink-0"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {!isEditMode ? (
+                  <Button
+                    onClick={() => setIsEditMode(true)}
+                    variant="outline"
+                    className="button-elegant-outline flex-shrink-0"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => setIsEditMode(false)}
+                      variant="outline"
+                      className="button-elegant-outline flex-shrink-0"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview
+                    </Button>
+                    <Button
+                      onClick={saveMarkdown}
+                      disabled={saving}
+                      className="button-elegant flex-shrink-0"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {saving ? 'Saving...' : 'Save'}
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
             
-            {/* Editor content area with no extra padding */}
-            <div className="flex-1 grid grid-cols-2 gap-4 p-4 overflow-hidden">
-              <div className="flex flex-col">
-                <Label className="text-white mb-2 text-sm">Markdown Editor</Label>
-                <Textarea
-                  value={markdownContent}
-                  onChange={(e) => setMarkdownContent(e.target.value)}
-                  placeholder="Write your notes in markdown format..."
-                  className="flex-1 resize-none input-elegant font-mono text-sm"
-                />
-              </div>
-              <div className="flex flex-col">
-                <Label className="text-white mb-2 text-sm">Live Preview</Label>
-                <div 
-                  className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
-                />
-              </div>
+            {/* Content area - preview only or editor + preview */}
+            <div className="flex-1 p-4 overflow-hidden">
+              {!isEditMode ? (
+                /* Preview only mode */
+                <div className="flex flex-col h-full">
+                  <Label className="text-white mb-2 text-sm">Preview</Label>
+                  <div 
+                    className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
+                  />
+                </div>
+              ) : (
+                /* Edit mode - both editor and preview */
+                <div className="grid grid-cols-2 gap-4 h-full">
+                  <div className="flex flex-col">
+                    <Label className="text-white mb-2 text-sm">Markdown Editor</Label>
+                    <Textarea
+                      value={markdownContent}
+                      onChange={(e) => setMarkdownContent(e.target.value)}
+                      placeholder="Write your notes in markdown format..."
+                      className="flex-1 resize-none input-elegant font-mono text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <Label className="text-white mb-2 text-sm">Live Preview</Label>
+                    <div 
+                      className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </DialogContent>
