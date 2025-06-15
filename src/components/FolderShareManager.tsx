@@ -60,11 +60,16 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
     }
 
     try {
+      console.log('Fetching folder shares for folder:', folderId);
       const { data, error } = await supabase.rpc('get_folder_shares', {
         folder_uuid: folderId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from get_folder_shares:', error);
+        throw error;
+      }
+      console.log('Folder shares fetched successfully:', data);
       setShares(data || []);
     } catch (error) {
       console.error('Error fetching folder shares:', error);
@@ -83,9 +88,14 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
     }
 
     try {
+      console.log('Fetching shared folders for user');
       const { data, error } = await supabase.rpc('get_shared_folders_for_user');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from get_shared_folders_for_user:', error);
+        throw error;
+      }
+      console.log('Shared folders fetched successfully:', data);
       setSharedFolders(data || []);
     } catch (error) {
       console.error('Error fetching shared folders:', error);
@@ -125,6 +135,7 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
 
     setLoading(true);
     try {
+      console.log('Sharing folder with:', trimmedEmail);
       const { error } = await supabase
         .from('folder_shares')
         .insert({
@@ -135,6 +146,7 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
         });
 
       if (error) {
+        console.error('Error sharing folder:', error);
         // Handle the specific duplicate key error
         if (error.code === '23505') {
           toast({
@@ -148,6 +160,7 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
         return;
       }
 
+      console.log('Folder shared successfully');
       setShareEmail('');
       setIsShareDialogOpen(false);
       fetchFolderShares();
@@ -178,13 +191,18 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
     }
 
     try {
+      console.log('Updating share permission for:', shareId, 'to:', newPermission);
       const { error } = await supabase
         .from('folder_shares')
         .update({ permission_level: newPermission })
         .eq('id', shareId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating permission:', error);
+        throw error;
+      }
 
+      console.log('Permission updated successfully');
       fetchFolderShares();
       toast({
         title: "Success",
@@ -211,13 +229,18 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
     }
 
     try {
+      console.log('Removing share:', shareId);
       const { error } = await supabase
         .from('folder_shares')
         .delete()
         .eq('id', shareId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error removing share:', error);
+        throw error;
+      }
 
+      console.log('Share removed successfully');
       fetchFolderShares();
       toast({
         title: "Success",
