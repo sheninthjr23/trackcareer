@@ -89,20 +89,19 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
                   <SidebarMenuButton
                     onClick={() => setActiveSection(item.section)}
                     isActive={activeSection === item.section}
-                    size="lg"
-                    className={`w-full rounded-lg transition-all duration-200 h-auto min-h-[60px] py-3 ${
+                    className={`w-full rounded-lg transition-all duration-200 ${
                       activeSection === item.section 
                         ? 'bg-white text-black hover:bg-white/90' 
                         : 'text-gray-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <item.icon className={`h-5 w-5 shrink-0 ${
+                    <item.icon className={`h-5 w-5 ${
                       activeSection === item.section ? 'text-black' : 'text-gray-400'
                     }`} />
-                    <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
-                      <span className="font-medium text-sm leading-tight">{item.title}</span>
-                      <span className={`text-xs leading-tight ${
-                        activeSection === item.section ? 'text-black/80' : 'text-gray-500'
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{item.title}</span>
+                      <span className={`text-xs ${
+                        activeSection === item.section ? 'text-black/90' : 'text-gray-400'
                       }`}>
                         {item.description}
                       </span>
