@@ -139,10 +139,10 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md mx-auto">
         {/* Header Section */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-6 mb-8">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center">
               <Sparkles className="w-8 h-8 text-black" />
