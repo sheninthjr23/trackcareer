@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -30,10 +31,14 @@ function AppContent() {
     return <Auth />;
   }
 
+  const handleSectionChange = (section: 'resumes' | 'courses' | 'activities' | 'jobs') => {
+    setActiveSection(section);
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onSectionChange={handleSectionChange} />;
       case 'resumes':
         return <ResumeManager />;
       case 'courses':
@@ -47,7 +52,7 @@ function AppContent() {
       case 'jobs':
         return <JobApplicationTracker />;
       default:
-        return <Dashboard />;
+        return <Dashboard onSectionChange={handleSectionChange} />;
     }
   };
 

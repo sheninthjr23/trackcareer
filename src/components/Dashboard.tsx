@@ -13,7 +13,18 @@ interface DashboardStats {
   activeApplications: number;
 }
 
-export function Dashboard() {
+interface RecentActivity {
+  type: string;
+  action: string;
+  time: string;
+  created_at?: string;
+}
+
+interface DashboardProps {
+  onSectionChange?: (section: 'resumes' | 'courses' | 'activities' | 'jobs') => void;
+}
+
+export function Dashboard({ onSectionChange }: DashboardProps = {}) {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalResumes: 0,
@@ -21,11 +32,13 @@ export function Dashboard() {
     upcomingActivities: 0,
     activeApplications: 0,
   });
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchStats();
+      fetchRecentActivities();
     }
   }, [user]);
 
@@ -48,6 +61,96 @@ export function Dashboard() {
       console.error('Error fetching stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      const activities: RecentActivity[] = [];
+      
+      // Fetch recent resumes
+      const { data: resumes } = await supabase
+        .from('resumes')
+        .select('custom_name, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      if (resumes) {
+        resumes.forEach(resume => {
+          activities.push({
+            type: 'Resume',
+            action: `Uploaded ${resume.custom_name}`,
+            time: formatTimeAgo(resume.created_at),
+            created_at: resume.created_at
+          });
+        });
+      }
+
+      // Fetch recent courses
+      const { data: courses } = await supabase
+        .from('courses')
+        .select('course_name, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      if (courses) {
+        courses.forEach(course => {
+          activities.push({
+            type: 'Course',
+            action: `Started ${course.course_name}`,
+            time: formatTimeAgo(course.created_at),
+            created_at: course.created_at
+          });
+        });
+      }
+
+      // Fetch recent job applications
+      const { data: jobs } = await supabase
+        .from('job_applications')
+        .select('company_name, job_title, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(2);
+
+      if (jobs) {
+        jobs.forEach(job => {
+          activities.push({
+            type: 'Job',
+            action: `Applied to ${job.company_name} - ${job.job_title}`,
+            time: formatTimeAgo(job.created_at),
+            created_at: job.created_at
+          });
+        });
+      }
+
+      // Sort all activities by creation date and take the most recent 4
+      const sortedActivities = activities
+        .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
+        .slice(0, 4);
+
+      setRecentActivities(sortedActivities);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  };
+
+  const handleQuickAction = (section: 'resumes' | 'courses' | 'activities' | 'jobs') => {
+    if (onSectionChange) {
+      onSectionChange(section);
     }
   };
 
@@ -80,13 +183,6 @@ export function Dashboard() {
       description: "Job opportunities",
       color: "text-primary",
     },
-  ];
-
-  const recentActivities = [
-    { type: "Course", action: "Started React Advanced Patterns", time: "2 hours ago" },
-    { type: "Job", action: "Applied to Tech Corp - Senior Developer", time: "1 day ago" },
-    { type: "Resume", action: "Uploaded new resume version", time: "2 days ago" },
-    { type: "Activity", action: "Completed System Design study", time: "3 days ago" },
   ];
 
   if (loading) {
@@ -155,19 +251,23 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {activity.type}
-                      </Badge>
-                      <span className="text-sm font-medium">{activity.action}</span>
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {activity.type}
+                        </Badge>
+                        <span className="text-sm font-medium">{activity.action}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No recent activities found. Start by uploading a resume or adding a course!</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -183,19 +283,31 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
+              <div 
+                onClick={() => handleQuickAction('resumes')}
+                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+              >
                 <span className="text-sm font-medium">Upload new resume</span>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
+              <div 
+                onClick={() => handleQuickAction('courses')}
+                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+              >
                 <span className="text-sm font-medium">Add new course</span>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
+              <div 
+                onClick={() => handleQuickAction('activities')}
+                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+              >
                 <span className="text-sm font-medium">Track new activity</span>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors">
+              <div 
+                onClick={() => handleQuickAction('jobs')}
+                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+              >
                 <span className="text-sm font-medium">Log job application</span>
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </div>
