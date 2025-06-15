@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,16 +47,16 @@ export function CourseManager() {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [editFolderName, setEditFolderName] = useState('');
-  const [newElement, setNewElement] = {
+  const [newElement, setNewElement] = useState({
     title: '',
     google_drive_link: '',
     description: '',
-  };
-  const [editElement, setEditElement] = {
+  });
+  const [editElement, setEditElement] = useState({
     title: '',
     google_drive_link: '',
     description: '',
-  };
+  });
   const { toast } = useToast();
   const { user } = useAuth();
   const { openVideoInPiP, isVideoInPiP } = usePiPIntegration();
