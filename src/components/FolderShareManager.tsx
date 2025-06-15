@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Share2, X, Users, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface FolderShare {
   id: string;
@@ -41,15 +42,23 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
   const [permissionLevel, setPermissionLevel] = useState('view');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (folderId) {
+    if (folderId && user) {
       fetchFolderShares();
     }
-    fetchSharedFolders();
-  }, [folderId]);
+    if (user) {
+      fetchSharedFolders();
+    }
+  }, [folderId, user]);
 
   const fetchFolderShares = async () => {
+    if (!user) {
+      console.log('No user available for fetching folder shares');
+      return;
+    }
+
     try {
       const { data, error } = await supabase.rpc('get_folder_shares', {
         folder_uuid: folderId
@@ -68,6 +77,11 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
   };
 
   const fetchSharedFolders = async () => {
+    if (!user) {
+      console.log('No user available for fetching shared folders');
+      return;
+    }
+
     try {
       const { data, error } = await supabase.rpc('get_shared_folders_for_user');
 
@@ -84,7 +98,14 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
   };
 
   const shareFolder = async () => {
-    if (!shareEmail.trim() || !folderId) return;
+    if (!shareEmail.trim() || !folderId || !user) {
+      toast({
+        title: "Error",
+        description: "Please provide an email address and ensure you're logged in.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -92,6 +113,7 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
         .from('folder_shares')
         .insert({
           folder_id: folderId,
+          shared_by: user.id,
           shared_with_email: shareEmail.trim().toLowerCase(),
           permission_level: permissionLevel,
         });
@@ -118,6 +140,15 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
   };
 
   const removeShare = async (shareId: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to remove shares.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('folder_shares')
@@ -140,6 +171,21 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
       });
     }
   };
+
+  if (!user) {
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Authentication Required</DialogTitle>
+            <DialogDescription>
+              You must be logged in to manage folder sharing.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
