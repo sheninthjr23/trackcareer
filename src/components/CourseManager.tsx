@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder } from 'lucide-react';
+import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder, PictureInPicture } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePiPIntegration } from '@/hooks/usePiPIntegration';
 
 interface CourseFolder {
   id: string;
@@ -46,18 +46,19 @@ export function CourseManager() {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [editFolderName, setEditFolderName] = useState('');
-  const [newElement, setNewElement] = useState({
+  const [newElement, setNewElement] = {
     title: '',
     google_drive_link: '',
     description: '',
-  });
-  const [editElement, setEditElement] = useState({
+  };
+  const [editElement, setEditElement] = {
     title: '',
     google_drive_link: '',
     description: '',
-  });
+  };
   const { toast } = useToast();
   const { user } = useAuth();
+  const { openVideoInPiP, isVideoInPiP } = usePiPIntegration();
 
   useEffect(() => {
     if (user) {
@@ -423,6 +424,17 @@ export function CourseManager() {
         .sort((a, b) => a.course_order - b.course_order)
     : [];
 
+  const openVideoInModal = (element: CourseElement) => {
+    setSelectedElement(element);
+    setIsViewerOpen(true);
+  };
+
+  const openVideoInPictureInPicture = (element: CourseElement) => {
+    if (element.google_drive_link) {
+      openVideoInPiP(element.google_drive_link, element.title);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -576,17 +588,27 @@ export function CourseManager() {
                         </p>
                       )}
                       {element.google_drive_link && (
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setSelectedElement(element);
-                            setIsViewerOpen(true);
-                          }}
-                          className="button-elegant"
-                        >
-                          <Video className="h-3 w-3 mr-1" />
-                          Watch Video
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => openVideoInModal(element)}
+                            className="button-elegant"
+                          >
+                            <Video className="h-3 w-3 mr-1" />
+                            Watch Full Screen
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openVideoInPictureInPicture(element)}
+                            className={`button-elegant-outline ${
+                              isVideoInPiP(element.google_drive_link) ? 'bg-white/20' : ''
+                            }`}
+                          >
+                            <PictureInPicture className="h-3 w-3 mr-1" />
+                            PiP Mode
+                          </Button>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
