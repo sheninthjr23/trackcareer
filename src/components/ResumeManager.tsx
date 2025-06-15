@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,11 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, FolderOpen, Plus, Eye, Share2 } from 'lucide-react';
+import { Upload, FileText, FolderOpen, Plus, Eye, Share2, Edit, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ResumeViewer } from './ResumeViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ResumeFolder {
   id: string;
@@ -44,6 +46,10 @@ export function ResumeManager() {
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<ResumeFolder | null>(null);
+  const [editingResume, setEditingResume] = useState<Resume | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
+  const [editResumeName, setEditResumeName] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -119,6 +125,135 @@ export function ResumeManager() {
       toast({
         title: "Error",
         description: "Failed to create folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateFolder = async () => {
+    if (!editFolderName.trim() || !editingFolder) return;
+
+    try {
+      const { error } = await supabase
+        .from('resume_folders')
+        .update({ name: editFolderName.trim() })
+        .eq('id', editingFolder.id);
+
+      if (error) throw error;
+
+      setEditingFolder(null);
+      setEditFolderName('');
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Folder updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteFolder = async (folder: ResumeFolder) => {
+    try {
+      // Check if folder has resumes
+      const folderResumes = resumes.filter(r => r.folder_id === folder.id);
+      if (folderResumes.length > 0) {
+        toast({
+          title: "Cannot Delete",
+          description: "Please move or delete all resumes in this folder first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('resume_folders')
+        .delete()
+        .eq('id', folder.id);
+
+      if (error) throw error;
+
+      if (selectedFolder === folder.id) {
+        setSelectedFolder(null);
+      }
+      fetchFolders();
+      toast({
+        title: "Success",
+        description: "Folder deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete folder.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateResume = async () => {
+    if (!editResumeName.trim() || !editingResume) return;
+
+    try {
+      const { error } = await supabase
+        .from('resumes')
+        .update({ custom_name: editResumeName.trim() })
+        .eq('id', editingResume.id);
+
+      if (error) throw error;
+
+      setEditingResume(null);
+      setEditResumeName('');
+      fetchResumes();
+      toast({
+        title: "Success",
+        description: "Resume name updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating resume:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update resume name.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteResume = async (resume: Resume) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('resumes')
+        .remove([resume.file_path]);
+
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        // Continue with database deletion even if storage fails
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('id', resume.id);
+
+      if (dbError) throw dbError;
+
+      fetchResumes();
+      toast({
+        title: "Success",
+        description: "Resume deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete resume.",
         variant: "destructive",
       });
     }
@@ -330,13 +465,49 @@ export function ResumeManager() {
                 className={`elegant-card cursor-pointer transition-all hover:scale-105 ${
                   selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
                 }`}
-                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-white flex items-center">
-                    <FolderOpen className="h-5 w-5 mr-2" />
-                    {folder.name}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle 
+                      className="text-white flex items-center flex-1"
+                      onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
+                    >
+                      <FolderOpen className="h-5 w-5 mr-2" />
+                      {folder.name}
+                    </CardTitle>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-40 p-2 elegant-card">
+                        <div className="space-y-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-white hover:bg-white/10"
+                            onClick={() => {
+                              setEditingFolder(folder);
+                              setEditFolderName(folder.name);
+                            }}
+                          >
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-red-400 hover:bg-red-500/10"
+                            onClick={() => deleteFolder(folder)}
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
@@ -356,10 +527,44 @@ export function ResumeManager() {
                 {filteredResumes.map((resume) => (
                   <Card key={resume.id} className="elegant-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-white flex items-center text-sm">
-                        <FileText className="h-4 w-4 mr-2" />
-                        {resume.custom_name}
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-white flex items-center text-sm flex-1">
+                          <FileText className="h-4 w-4 mr-2" />
+                          {resume.custom_name}
+                        </CardTitle>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-40 p-2 elegant-card">
+                            <div className="space-y-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-white hover:bg-white/10"
+                                onClick={() => {
+                                  setEditingResume(resume);
+                                  setEditResumeName(resume.custom_name);
+                                }}
+                              >
+                                <Edit className="h-3 w-3 mr-2" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-red-400 hover:bg-red-500/10"
+                                onClick={() => deleteResume(resume)}
+                              >
+                                <Trash2 className="h-3 w-3 mr-2" />
+                                Delete
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground text-xs mb-3">
@@ -401,10 +606,44 @@ export function ResumeManager() {
             {resumes.map((resume) => (
               <Card key={resume.id} className="elegant-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-white flex items-center text-sm">
-                    <FileText className="h-4 w-4 mr-2" />
-                    {resume.custom_name}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white flex items-center text-sm flex-1">
+                      <FileText className="h-4 w-4 mr-2" />
+                      {resume.custom_name}
+                    </CardTitle>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-40 p-2 elegant-card">
+                        <div className="space-y-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-white hover:bg-white/10"
+                            onClick={() => {
+                              setEditingResume(resume);
+                              setEditResumeName(resume.custom_name);
+                            }}
+                          >
+                            <Edit className="h-3 w-3 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-red-400 hover:bg-red-500/10"
+                            onClick={() => deleteResume(resume)}
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-xs mb-3">
@@ -439,6 +678,86 @@ export function ResumeManager() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Folder Dialog */}
+      <Dialog open={!!editingFolder} onOpenChange={() => setEditingFolder(null)}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Folder</DialogTitle>
+            <DialogDescription>
+              Update the folder name.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editFolderName" className="text-white">Folder Name</Label>
+              <Input
+                id="editFolderName"
+                value={editFolderName}
+                onChange={(e) => setEditFolderName(e.target.value)}
+                placeholder="Enter folder name"
+                className="input-elegant"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setEditingFolder(null)} 
+                variant="outline" 
+                className="button-elegant-outline flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={updateFolder} 
+                disabled={!editFolderName.trim()} 
+                className="button-elegant flex-1"
+              >
+                Update
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Resume Dialog */}
+      <Dialog open={!!editingResume} onOpenChange={() => setEditingResume(null)}>
+        <DialogContent className="elegant-card">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Resume Name</DialogTitle>
+            <DialogDescription>
+              Update the display name for your resume.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editResumeName" className="text-white">Resume Name</Label>
+              <Input
+                id="editResumeName"
+                value={editResumeName}
+                onChange={(e) => setEditResumeName(e.target.value)}
+                placeholder="Enter resume name"
+                className="input-elegant"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setEditingResume(null)} 
+                variant="outline" 
+                className="button-elegant-outline flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={updateResume} 
+                disabled={!editResumeName.trim()} 
+                className="button-elegant flex-1"
+              >
+                Update
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ResumeViewer
         isOpen={isViewerOpen}
