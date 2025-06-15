@@ -8,10 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Building2, MapPin, Calendar, TrendingUp, Edit2, Trash2, Clock, CheckCircle, XCircle, AlertCircle, Target, Briefcase, Users, ChevronDown, ChevronRight, User, DollarSign } from "lucide-react";
+import { Plus, Building2, MapPin, Calendar, TrendingUp, Edit2, Trash2, Clock, CheckCircle, XCircle, AlertCircle, Target, Briefcase, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type JobApplicationStatus = "In Progress" | "Shortlisted" | "Rejected" | "Accepted";
@@ -259,11 +258,11 @@ export function JobApplicationTracker() {
 
   const getStatusColor = (status: JobApplicationStatus) => {
     switch (status) {
-      case 'In Progress': return 'bg-blue-600 text-blue-100 border-blue-500';
-      case 'Shortlisted': return 'bg-green-600 text-green-100 border-green-500';
-      case 'Rejected': return 'bg-red-600 text-red-100 border-red-500';
-      case 'Accepted': return 'bg-emerald-600 text-emerald-100 border-emerald-500';
-      default: return 'bg-gray-600 text-gray-100 border-gray-500';
+      case 'In Progress': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+      case 'Shortlisted': return 'bg-green-500/20 text-green-300 border-green-500/40';
+      case 'Rejected': return 'bg-red-500/20 text-red-300 border-red-500/40';
+      case 'Accepted': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
     }
   };
 
@@ -290,49 +289,48 @@ export function JobApplicationTracker() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 p-6">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="text-center">
-            <h2 className="text-4xl font-bold text-white mb-4">Loading Applications...</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-800/50 rounded-2xl p-6 animate-pulse">
-                  <div className="h-6 bg-gray-700 rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-700 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-700 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-gradient">Job Applications</h2>
+            <p className="text-muted-foreground text-lg">Loading your applications...</p>
           </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="animate-pulse elegant-card">
+              <CardHeader>
+                <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                <div className="h-3 bg-white/10 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-white/10 rounded w-20"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="text-center space-y-6">
-          <div className="space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-green-400 bg-clip-text text-transparent">
-              Job Application Flow
-            </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Track your job applications with a modern, visual flow-based interface
-            </p>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header with Stats */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tight text-gradient">Job Applications</h2>
+            <p className="text-muted-foreground text-lg">Track your job applications with modern flow-based interface</p>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex gap-3">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-full text-lg font-medium transition-all duration-300 transform hover:scale-105">
-                  <Plus className="h-5 w-5 mr-2" />
+                <Button className="button-elegant">
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Application
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-gray-900 border-gray-700 max-w-2xl">
+              <DialogContent className="elegant-card max-w-2xl">
                 <DialogHeader>
                   <DialogTitle className="text-white">{editingApplication ? 'Edit Application' : 'Add New Application'}</DialogTitle>
                   <DialogDescription>
@@ -347,7 +345,7 @@ export function JobApplicationTracker() {
                         id="company"
                         value={formData.company_name}
                         onChange={(e) => setFormData({...formData, company_name: e.target.value})}
-                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        className="elegant-input mt-2"
                         required
                       />
                     </div>
@@ -357,7 +355,7 @@ export function JobApplicationTracker() {
                         id="role"
                         value={formData.role}
                         onChange={(e) => setFormData({...formData, role: e.target.value})}
-                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        className="elegant-input mt-2"
                         required
                       />
                     </div>
@@ -370,7 +368,7 @@ export function JobApplicationTracker() {
                         id="location"
                         value={formData.location}
                         onChange={(e) => setFormData({...formData, location: e.target.value})}
-                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        className="elegant-input mt-2"
                       />
                     </div>
                     <div>
@@ -380,7 +378,7 @@ export function JobApplicationTracker() {
                         type="date"
                         value={formData.date_applied}
                         onChange={(e) => setFormData({...formData, date_applied: e.target.value})}
-                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        className="elegant-input mt-2"
                         required
                       />
                     </div>
@@ -390,7 +388,7 @@ export function JobApplicationTracker() {
                     <div>
                       <Label htmlFor="status" className="text-white">Status</Label>
                       <Select value={formData.status} onValueChange={(value: JobApplicationStatus) => setFormData({...formData, status: value})}>
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white mt-2">
+                        <SelectTrigger className="elegant-input mt-2">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -408,7 +406,7 @@ export function JobApplicationTracker() {
                         value={formData.ctc}
                         onChange={(e) => setFormData({...formData, ctc: e.target.value})}
                         placeholder="e.g., 12 LPA"
-                        className="bg-gray-800 border-gray-600 text-white mt-2"
+                        className="elegant-input mt-2"
                       />
                     </div>
                   </div>
@@ -420,7 +418,7 @@ export function JobApplicationTracker() {
                       type="number"
                       value={formData.total_rounds}
                       onChange={(e) => setFormData({...formData, total_rounds: e.target.value})}
-                      className="bg-gray-800 border-gray-600 text-white mt-2"
+                      className="elegant-input mt-2"
                     />
                   </div>
 
@@ -430,12 +428,12 @@ export function JobApplicationTracker() {
                       id="notes"
                       value={formData.initial_notes}
                       onChange={(e) => setFormData({...formData, initial_notes: e.target.value})}
-                      className="bg-gray-800 border-gray-600 text-white mt-2"
+                      className="elegant-input mt-2"
                       rows={3}
                     />
                   </div>
 
-                  <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Button type="submit" className="w-full button-elegant">
                     {editingApplication ? 'Update Application' : 'Add Application'}
                   </Button>
                 </form>
@@ -444,12 +442,12 @@ export function JobApplicationTracker() {
 
             <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500/10 px-8 py-3 rounded-full text-lg font-medium">
-                  <TrendingUp className="h-5 w-5 mr-2" />
+                <Button variant="outline" className="button-elegant-outline">
+                  <TrendingUp className="h-4 w-4 mr-2" />
                   Add Update
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-gray-900 border-gray-700">
+              <DialogContent className="elegant-card">
                 <DialogHeader>
                   <DialogTitle className="text-white">Add Application Update</DialogTitle>
                   <DialogDescription>
@@ -460,7 +458,7 @@ export function JobApplicationTracker() {
                   <div>
                     <Label htmlFor="application" className="text-white">Select Application</Label>
                     <Select value={selectedApplicationId} onValueChange={setSelectedApplicationId}>
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white mt-2">
+                      <SelectTrigger className="elegant-input mt-2">
                         <SelectValue placeholder="Choose application" />
                       </SelectTrigger>
                       <SelectContent>
@@ -476,7 +474,7 @@ export function JobApplicationTracker() {
                   <div>
                     <Label htmlFor="update-type" className="text-white">Update Type</Label>
                     <Select value={updateData.update_type} onValueChange={(value) => setUpdateData({...updateData, update_type: value})}>
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white mt-2">
+                      <SelectTrigger className="elegant-input mt-2">
                         <SelectValue placeholder="Select update type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -496,7 +494,7 @@ export function JobApplicationTracker() {
                       type="date"
                       value={updateData.update_date}
                       onChange={(e) => setUpdateData({...updateData, update_date: e.target.value})}
-                      className="bg-gray-800 border-gray-600 text-white mt-2"
+                      className="elegant-input mt-2"
                     />
                   </div>
 
@@ -506,96 +504,138 @@ export function JobApplicationTracker() {
                       id="details"
                       value={updateData.details}
                       onChange={(e) => setUpdateData({...updateData, details: e.target.value})}
-                      className="bg-gray-800 border-gray-600 text-white mt-2"
+                      className="elegant-input mt-2"
                       rows={3}
                       required
                     />
                   </div>
 
-                  <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Button type="submit" className="w-full button-elegant">
                     Add Update
                   </Button>
                 </form>
               </DialogContent>
             </Dialog>
           </div>
-
-          {/* Statistics Flow */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-4xl mx-auto">
-            {[
-              { label: 'Total', value: stats.total, icon: Briefcase, color: 'from-blue-500 to-cyan-500' },
-              { label: 'In Progress', value: stats.inProgress, icon: Clock, color: 'from-yellow-500 to-orange-500' },
-              { label: 'Shortlisted', value: stats.shortlisted, icon: Target, color: 'from-green-500 to-emerald-500' },
-              { label: 'Accepted', value: stats.accepted, icon: CheckCircle, color: 'from-emerald-500 to-green-600' },
-              { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'from-red-500 to-pink-500' }
-            ].map((stat, index) => (
-              <div key={stat.label} className={`bg-gradient-to-br ${stat.color} p-6 rounded-2xl text-white text-center transform hover:scale-105 transition-all duration-300`}>
-                <stat.icon className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-3xl font-bold">{stat.value}</div>
-                <div className="text-sm opacity-90">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Filter Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 rounded-2xl p-2 max-w-2xl mx-auto">
-            <TabsTrigger value="all" className="rounded-xl">All</TabsTrigger>
-            <TabsTrigger value="in-progress" className="rounded-xl">In Progress</TabsTrigger>
-            <TabsTrigger value="shortlisted" className="rounded-xl">Shortlisted</TabsTrigger>
-            <TabsTrigger value="accepted" className="rounded-xl">Accepted</TabsTrigger>
-            <TabsTrigger value="rejected" className="rounded-xl">Rejected</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab} className="mt-8">
-            {getFilteredApplications().length === 0 ? (
-              <div className="text-center py-16">
-                <div className="bg-gray-800/50 rounded-3xl p-12 max-w-md mx-auto">
-                  <Building2 className="h-20 w-20 text-gray-500 mx-auto mb-6" />
-                  <h3 className="text-2xl font-bold text-white mb-4">
-                    {activeTab === 'all' ? 'No applications yet' : `No ${activeTab.replace('-', ' ')} applications`}
-                  </h3>
-                  <p className="text-gray-400 mb-8">
-                    {activeTab === 'all' 
-                      ? 'Start tracking your job applications to monitor your career progress.'
-                      : `You don't have any ${activeTab.replace('-', ' ')} applications yet.`
-                    }
-                  </p>
-                  {activeTab === 'all' && (
-                    <Button onClick={() => setIsAddDialogOpen(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full px-8 py-3">
-                      <Plus className="h-5 w-5 mr-2" />
-                      Add First Application
-                    </Button>
-                  )}
-                </div>
+        {/* Statistics Dashboard */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card className="elegant-card">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <Briefcase className="h-5 w-5 text-blue-400" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getFilteredApplications().map((application) => {
-                  const applicationUpdates = getApplicationUpdates(application.id);
-                  
-                  return (
-                    <div key={application.id} className="bg-gray-800/40 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 transform hover:scale-[1.02] group">
-                      {/* Company Header */}
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-gray-700/50 rounded-lg">
-                              <Building2 className="h-5 w-5 text-blue-400" />
-                            </div>
-                            <h3 className="text-xl font-bold text-white">{application.company_name}</h3>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-300 mb-1">
-                            <User className="h-4 w-4" />
-                            <span className="font-medium">{application.role}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-400 text-sm">
-                            <MapPin className="h-4 w-4" />
-                            <span>{application.location || 'Remote'}</span>
-                          </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold text-white">{stats.total}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="elegant-card">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-yellow-500/20 rounded-lg">
+                <Clock className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold text-white">{stats.inProgress}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="elegant-card">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-green-500/20 rounded-lg">
+                <Target className="h-5 w-5 text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Shortlisted</p>
+                <p className="text-2xl font-bold text-white">{stats.shortlisted}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="elegant-card">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-emerald-500/20 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Accepted</p>
+                <p className="text-2xl font-bold text-white">{stats.accepted}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="elegant-card">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="p-2 bg-red-500/20 rounded-lg">
+                <XCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Rejected</p>
+                <p className="text-2xl font-bold text-white">{stats.rejected}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Tabbed View */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-5 bg-white/5">
+          <TabsTrigger value="all">All Applications</TabsTrigger>
+          <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+          <TabsTrigger value="shortlisted">Shortlisted</TabsTrigger>
+          <TabsTrigger value="accepted">Accepted</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          {getFilteredApplications().length === 0 ? (
+            <Card className="elegant-card">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Building2 className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {activeTab === 'all' ? 'No applications yet' : `No ${activeTab.replace('-', ' ')} applications`}
+                </h3>
+                <p className="text-muted-foreground text-center mb-6">
+                  {activeTab === 'all' 
+                    ? 'Start tracking your job applications to monitor your career progress.'
+                    : `You don't have any ${activeTab.replace('-', ' ')} applications yet.`
+                  }
+                </p>
+                {activeTab === 'all' && (
+                  <Button onClick={() => setIsAddDialogOpen(true)} className="button-elegant">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Application
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {getFilteredApplications().map((application) => {
+                const applicationUpdates = getApplicationUpdates(application.id);
+                const isExpanded = expandedUpdates[application.id];
+                
+                return (
+                  <Card key={application.id} className="card-hover elegant-card group">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-white truncate flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-muted-foreground" />
+                            {application.company_name}
+                          </CardTitle>
+                          <CardDescription className="text-muted-foreground flex items-center gap-1 mt-1">
+                            <Users className="h-4 w-4" />
+                            {application.role}
+                          </CardDescription>
                         </div>
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -613,7 +653,7 @@ export function JobApplicationTracker() {
                               });
                               setIsAddDialogOpen(true);
                             }}
-                            className="h-8 w-8 p-0 hover:bg-blue-500/20 text-blue-400"
+                            className="h-8 w-8 p-0 hover:bg-white/10"
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
@@ -627,41 +667,42 @@ export function JobApplicationTracker() {
                           </Button>
                         </div>
                       </div>
-
-                      {/* Applied Date */}
-                      <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{application.location || 'Location not specified'}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         <span>Applied: {new Date(application.date_applied).toLocaleDateString('en-IN', {
                           timeZone: 'Asia/Kolkata'
                         })}</span>
                       </div>
 
-                      {/* Status and CTC */}
-                      <div className="flex items-center justify-between mb-6">
-                        <Badge className={`${getStatusColor(application.status)} px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2`}>
+                      <div className="flex items-center justify-between">
+                        <Badge className={`${getStatusColor(application.status)} flex items-center gap-1`}>
                           {getStatusIcon(application.status)}
                           {application.status}
                         </Badge>
                         {application.ctc && (
-                          <div className="flex items-center gap-1 text-green-400 font-semibold">
-                            <DollarSign className="h-4 w-4" />
-                            {application.ctc}
-                          </div>
+                          <span className="text-sm font-medium text-green-400">{application.ctc}</span>
                         )}
                       </div>
 
-                      {/* Interview Progress */}
                       {application.total_rounds && (
-                        <div className="bg-gray-700/30 rounded-xl p-4 mb-4">
-                          <div className="flex items-center justify-between text-sm mb-3">
-                            <span className="text-gray-300 font-medium">Interview Progress</span>
-                            <span className="text-white font-bold text-lg">
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-muted-foreground">Interview Progress</span>
+                            <span className="text-white font-medium">
                               {application.rounds_passed}/{application.total_rounds}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-600/50 rounded-full h-3">
+                          <div className="w-full bg-white/10 rounded-full h-2">
                             <div 
-                              className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
                               style={{ 
                                 width: `${(application.rounds_passed / application.total_rounds) * 100}%` 
                               }}
@@ -670,76 +711,64 @@ export function JobApplicationTracker() {
                         </div>
                       )}
 
-                      {/* Next Round */}
                       {application.next_round_date && (
-                        <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 rounded-xl p-3 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 rounded-lg p-2">
                           <Calendar className="h-4 w-4" />
-                          <span className="font-medium">Next Round: {new Date(application.next_round_date).toLocaleDateString('en-IN', {
+                          <span>Next Round: {new Date(application.next_round_date).toLocaleDateString('en-IN', {
                             timeZone: 'Asia/Kolkata'
                           })}</span>
                         </div>
                       )}
 
-                      {/* Recent Updates - Flow Chart Style */}
                       {applicationUpdates.length > 0 && (
-                        <Collapsible>
-                          <CollapsibleTrigger className="w-full">
-                            <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-xl hover:bg-gray-700/50 transition-colors">
-                              <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-purple-400" />
-                                <span className="text-white font-medium">Recent Updates</span>
-                                <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 text-xs">
-                                  {applicationUpdates.length}
-                                </Badge>
-                              </div>
-                              <ChevronDown className="h-4 w-4 text-gray-400 transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+                        <div className="border-t border-white/10 pt-3">
+                          <button
+                            onClick={() => toggleUpdatesExpansion(application.id)}
+                            className="w-full flex items-center justify-between text-sm font-medium text-white mb-2 hover:text-blue-400 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4" />
+                              Recent Updates
                             </div>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mt-3 space-y-3">
-                            <div className="relative">
-                              {applicationUpdates.slice(0, 3).map((update, index) => (
-                                <div key={update.id} className="relative flex gap-3 pb-3">
-                                  {/* Timeline Line */}
-                                  {index < applicationUpdates.slice(0, 3).length - 1 && (
-                                    <div className="absolute left-2 top-6 w-0.5 h-full bg-gradient-to-b from-purple-500 to-blue-500"></div>
-                                  )}
-                                  
-                                  {/* Timeline Dot */}
-                                  <div className="relative z-10 w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mt-1 flex-shrink-0"></div>
-                                  
-                                  {/* Update Content */}
-                                  <div className="flex-1 bg-gray-700/40 rounded-lg p-3">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-sm font-medium text-purple-300">{update.update_type}</span>
-                                      <span className="text-xs text-gray-400">
-                                        {new Date(update.created_at).toLocaleDateString('en-IN', {
-                                          timeZone: 'Asia/Kolkata'
-                                        })}
-                                      </span>
-                                    </div>
-                                    <p className="text-sm text-gray-300">{update.details}</p>
-                                  </div>
-                                </div>
-                              ))}
-                              {applicationUpdates.length > 3 && (
-                                <div className="text-center">
-                                  <span className="text-xs text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">
-                                    +{applicationUpdates.length - 3} more updates
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 transition-transform" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 transition-transform" />
+                            )}
+                          </button>
+                          
+                          <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                            isExpanded ? 'max-h-96 opacity-100' : 'max-h-12 opacity-75'
+                          }`}>
+                            {applicationUpdates.slice(0, isExpanded ? undefined : 1).map((update) => (
+                              <div key={update.id} className="text-xs text-muted-foreground bg-white/5 rounded p-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-medium text-white">{update.update_type}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(update.created_at).toLocaleDateString('en-IN', {
+                                      timeZone: 'Asia/Kolkata'
+                                    })}
                                   </span>
                                 </div>
-                              )}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
+                                <p>{update.details}</p>
+                              </div>
+                            ))}
+                            {!isExpanded && applicationUpdates.length > 1 && (
+                              <div className="text-xs text-blue-400 text-center">
+                                +{applicationUpdates.length - 1} more updates
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
