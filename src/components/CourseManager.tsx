@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -393,7 +392,7 @@ export function CourseManager() {
                   size="sm"
                   variant="outline"
                   onClick={() => openEditFolderDialog(folder)}
-                  className="button-elegant-outline h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-gray-700 hover:border-gray-300"
                 >
                   <Edit className="h-3 w-3" />
                 </Button>
@@ -401,7 +400,7 @@ export function CourseManager() {
                   size="sm"
                   variant="outline"
                   onClick={() => deleteFolder(folder.id)}
-                  className="button-elegant-outline h-6 w-6 p-0 hover:bg-red-500"
+                  className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-red-500 hover:border-red-400"
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
@@ -567,7 +566,7 @@ export function CourseManager() {
                             size="sm"
                             variant="outline"
                             onClick={() => openEditDialog(element)}
-                            className="button-elegant-outline h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 border-gray-400 text-gray-400 hover:bg-gray-700 hover:border-gray-300"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -575,7 +574,7 @@ export function CourseManager() {
                             size="sm"
                             variant="outline"
                             onClick={() => deleteElement(element.id)}
-                            className="button-elegant-outline h-8 w-8 p-0 hover:bg-red-500"
+                            className="h-8 w-8 p-0 border-gray-400 text-gray-400 hover:bg-red-500 hover:border-red-400"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
