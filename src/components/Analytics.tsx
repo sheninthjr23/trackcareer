@@ -8,8 +8,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineCh
 import { Calendar, TrendingUp, Target, Award, Activity, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ScoreBreakdownDialog } from "./ScoreBreakdownDialog";
 
 type TimeFilter = 'day' | 'week' | 'month' | 'year';
+type ScoreType = 'completion' | 'productivity' | 'active' | 'total';
 
 interface AnalyticsData {
   totalResumes: number;
@@ -52,6 +54,8 @@ export function Analytics() {
   const [categoryDistribution, setCategoryDistribution] = useState<ChartData[]>([]);
   const [progressOverTime, setProgressOverTime] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedScoreType, setSelectedScoreType] = useState<ScoreType>('completion');
 
   useEffect(() => {
     if (user) {
@@ -79,7 +83,6 @@ export function Analytics() {
     setLoading(true);
     try {
       const dateFilter = getDateFilter();
-      const dateFilterString = dateFilter.toISOString();
 
       // Fetch all data in parallel
       const [resumesResult, coursesResult, activitiesResult, jobsResult] = await Promise.all([
@@ -204,6 +207,11 @@ export function Analytics() {
     return Math.min(Math.round(score / 10), 100);
   };
 
+  const handleScoreClick = (scoreType: ScoreType) => {
+    setSelectedScoreType(scoreType);
+    setDialogOpen(true);
+  };
+
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
 
   if (loading) {
@@ -242,9 +250,12 @@ export function Analytics() {
         </Select>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="elegant-card">
+      {/* Key Metrics - Fixed alignment */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card 
+          className="elegant-card cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => handleScoreClick('completion')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
             <Target className="h-4 w-4 text-green-500" />
@@ -252,10 +263,14 @@ export function Analytics() {
           <CardContent>
             <div className="text-2xl font-bold text-gradient">{calculateCompletionRate()}%</div>
             <Progress value={calculateCompletionRate()} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">Click for details</p>
           </CardContent>
         </Card>
 
-        <Card className="elegant-card">
+        <Card 
+          className="elegant-card cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => handleScoreClick('productivity')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Productivity Score</CardTitle>
             <TrendingUp className="h-4 w-4 text-blue-500" />
@@ -263,10 +278,14 @@ export function Analytics() {
           <CardContent>
             <div className="text-2xl font-bold text-gradient">{calculateProductivityScore()}</div>
             <Progress value={calculateProductivityScore()} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">Click for details</p>
           </CardContent>
         </Card>
 
-        <Card className="elegant-card">
+        <Card 
+          className="elegant-card cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => handleScoreClick('active')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Items</CardTitle>
             <Activity className="h-4 w-4 text-yellow-500" />
@@ -276,10 +295,14 @@ export function Analytics() {
               {analyticsData.totalActivities + analyticsData.totalCourses - analyticsData.completedActivities - analyticsData.completedCourses}
             </div>
             <p className="text-xs text-muted-foreground">Items in progress</p>
+            <p className="text-xs text-muted-foreground mt-1">Click for details</p>
           </CardContent>
         </Card>
 
-        <Card className="elegant-card">
+        <Card 
+          className="elegant-card cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => handleScoreClick('total')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Activity</CardTitle>
             <BarChart3 className="h-4 w-4 text-purple-500" />
@@ -289,12 +312,13 @@ export function Analytics() {
               {analyticsData.totalResumes + analyticsData.totalCourses + analyticsData.totalActivities + analyticsData.totalJobApplications}
             </div>
             <p className="text-xs text-muted-foreground">All time items</p>
+            <p className="text-xs text-muted-foreground mt-1">Click for details</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Charts Grid - Improved responsiveness */}
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Activity Trend */}
         <Card className="elegant-card">
           <CardHeader>
@@ -306,8 +330,13 @@ export function Analytics() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={activityTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickMargin={8}
+                  />
+                  <YAxis stroke="#9ca3af" fontSize={12} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area 
                     type="monotone" 
@@ -338,7 +367,7 @@ export function Analytics() {
                     cy="50%"
                     outerRadius={80}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
+                    label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
                   >
                     {categoryDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -362,8 +391,13 @@ export function Analytics() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={progressOverTime}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickMargin={8}
+                  />
+                  <YAxis stroke="#9ca3af" fontSize={12} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line 
                     type="monotone" 
@@ -385,25 +419,33 @@ export function Analytics() {
             <CardDescription>Key performance indicators</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center p-2 rounded bg-blue-50 dark:bg-blue-950/20">
               <span className="text-sm font-medium">Resumes Uploaded</span>
               <span className="text-2xl font-bold text-blue-500">{analyticsData.totalResumes}</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center p-2 rounded bg-green-50 dark:bg-green-950/20">
               <span className="text-sm font-medium">Courses Completed</span>
               <span className="text-2xl font-bold text-green-500">{analyticsData.completedCourses}</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center p-2 rounded bg-yellow-50 dark:bg-yellow-950/20">
               <span className="text-sm font-medium">Activities Done</span>
               <span className="text-2xl font-bold text-yellow-500">{analyticsData.completedActivities}</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center p-2 rounded bg-purple-50 dark:bg-purple-950/20">
               <span className="text-sm font-medium">Active Applications</span>
               <span className="text-2xl font-bold text-purple-500">{analyticsData.activeApplications}</span>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Score Breakdown Dialog */}
+      <ScoreBreakdownDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        scoreType={selectedScoreType}
+        analyticsData={analyticsData}
+      />
     </div>
   );
 }
