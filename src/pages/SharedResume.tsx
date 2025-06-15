@@ -2,11 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Download, AlertCircle, ExternalLink, AlertTriangle } from "lucide-react";
+import { FileText, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PDFViewer } from "@/components/PDFViewer";
 
 interface SharedResumeData {
   id: string;
@@ -22,7 +21,6 @@ export default function SharedResume() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [showBrowserWarning, setShowBrowserWarning] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,7 +65,7 @@ export default function SharedResume() {
       // Get signed URL for the PDF
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('resumes')
-        .createSignedUrl(data.file_path, 3600); // Valid for 1 hour
+        .createSignedUrl(data.file_path, 3600);
 
       if (urlError) {
         console.error('Error creating signed URL:', urlError);
@@ -77,11 +75,6 @@ export default function SharedResume() {
 
       console.log('PDF URL created successfully');
       setPdfUrl(signedUrlData.signedUrl);
-      
-      // Check if we should show browser warning after a short delay
-      setTimeout(() => {
-        setShowBrowserWarning(true);
-      }, 2000);
     } catch (error) {
       console.error('Error fetching shared resume:', error);
       setError('An error occurred while loading the resume.');
@@ -106,22 +99,13 @@ export default function SharedResume() {
     }
   };
 
-  const openInNewTab = () => {
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
-    }
-  };
-
-  const openWithPdfViewer = () => {
-    if (pdfUrl) {
-      window.open(`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`, '_blank');
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-white">Loading shared resume...</p>
+        </div>
       </div>
     );
   }
@@ -141,86 +125,29 @@ export default function SharedResume() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
         {/* Header */}
         <Card className="elegant-card">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-primary" />
-                <div>
-                  <h1 className="text-xl font-bold text-white">{resume?.custom_name}</h1>
-                  <p className="text-sm text-muted-foreground">Shared Resume</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={openWithPdfViewer} className="button-elegant" disabled={!pdfUrl}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  PDF Viewer
-                </Button>
-                <Button onClick={openInNewTab} variant="outline" className="button-elegant-outline" disabled={!pdfUrl}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  New Tab
-                </Button>
-                <Button onClick={downloadResume} variant="outline" className="button-elegant-outline" disabled={!pdfUrl}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
+            <div className="flex items-center gap-3">
+              <FileText className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold text-white">{resume?.custom_name}</h1>
+                <p className="text-muted-foreground">Shared Resume</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Browser Warning */}
-        {showBrowserWarning && pdfUrl && (
-          <Alert className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-200">
-              If the PDF doesn't load below, your browser may be blocking it. Use the "PDF Viewer" button above or download the file directly.
-            </AlertDescription>
-          </Alert>
-        )}
-
         {/* PDF Viewer */}
         <Card className="elegant-card">
-          <CardContent className="p-0 relative">
-            {pdfUrl ? (
-              <div className="relative">
-                <iframe
-                  src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
-                  className="w-full h-[800px] rounded-lg"
-                  title={resume?.custom_name}
-                  onError={() => setShowBrowserWarning(true)}
-                />
-                {showBrowserWarning && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg">
-                    <div className="text-center p-8 max-w-md">
-                      <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-white mb-2">PDF Preview Blocked</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Your browser is blocking the PDF preview. Use the buttons above to view or download the file.
-                      </p>
-                      <div className="flex gap-2 justify-center">
-                        <Button onClick={openWithPdfViewer} size="sm" className="button-elegant">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Open PDF Viewer
-                        </Button>
-                        <Button onClick={downloadResume} size="sm" variant="outline" className="button-elegant-outline">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
-                <p className="text-muted-foreground">Loading PDF preview...</p>
-              </div>
-            )}
+          <CardContent className="p-6">
+            <PDFViewer
+              pdfUrl={pdfUrl}
+              fileName={resume?.custom_name || 'Resume'}
+              onDownload={downloadResume}
+            />
           </CardContent>
         </Card>
       </div>
