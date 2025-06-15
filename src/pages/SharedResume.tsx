@@ -31,13 +31,21 @@ export default function SharedResume() {
 
   const fetchSharedResume = async () => {
     try {
+      console.log('Fetching shared resume with token:', token);
+      
       const { data, error } = await supabase
         .from('resumes')
         .select('id, custom_name, original_filename, file_path, shareable_expiry')
         .eq('shareable_token', token)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error('Database error:', error);
+        setError('Resume not found or link is invalid.');
+        return;
+      }
+
+      if (!data) {
         setError('Resume not found or link is invalid.');
         return;
       }
@@ -51,6 +59,7 @@ export default function SharedResume() {
         return;
       }
 
+      console.log('Resume data found:', data);
       setResume(data);
       
       // Get signed URL for the PDF
@@ -64,6 +73,7 @@ export default function SharedResume() {
         return;
       }
 
+      console.log('PDF URL created successfully');
       setPdfUrl(signedUrlData.signedUrl);
     } catch (error) {
       console.error('Error fetching shared resume:', error);
@@ -125,7 +135,7 @@ export default function SharedResume() {
                   <p className="text-sm text-muted-foreground">Shared Resume</p>
                 </div>
               </div>
-              <Button onClick={downloadResume} className="button-elegant">
+              <Button onClick={downloadResume} className="button-elegant" disabled={!pdfUrl}>
                 <Download className="h-4 w-4 mr-2" />
                 Download
               </Button>
@@ -144,7 +154,8 @@ export default function SharedResume() {
               />
             ) : (
               <div className="flex items-center justify-center py-16">
-                <p className="text-muted-foreground">Failed to load PDF preview</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                <p className="text-muted-foreground">Loading PDF preview...</p>
               </div>
             )}
           </CardContent>

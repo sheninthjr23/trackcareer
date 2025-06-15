@@ -81,6 +81,7 @@ export function ResumeManager() {
         .order('upload_timestamp', { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched resumes:', data);
       setResumes(data || []);
     } catch (error) {
       console.error('Error fetching resumes:', error);
@@ -138,15 +139,24 @@ export function ResumeManager() {
 
     setUploading(true);
     try {
+      console.log('Starting file upload for user:', user.id);
+      
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
+
+      console.log('Uploading to path:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('resumes')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('File uploaded successfully, creating database record');
 
       const { error: dbError } = await supabase
         .from('resumes')
@@ -158,8 +168,12 @@ export function ResumeManager() {
           folder_id: selectedFolder,
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw dbError;
+      }
 
+      console.log('Resume record created successfully');
       fetchResumes();
       setIsUploadDialogOpen(false);
       toast({
@@ -170,11 +184,13 @@ export function ResumeManager() {
       console.error('Error uploading resume:', error);
       toast({
         title: "Error",
-        description: "Failed to upload resume.",
+        description: "Failed to upload resume. Please try again.",
         variant: "destructive",
       });
     } finally {
       setUploading(false);
+      // Reset the input
+      event.target.value = '';
     }
   };
 
@@ -183,6 +199,8 @@ export function ResumeManager() {
       const token = crypto.randomUUID();
       const expiry = new Date();
       expiry.setDate(expiry.getDate() + 7); // 7 days from now
+
+      console.log('Generating shareable link with token:', token);
 
       const { error } = await supabase
         .from('resumes')
@@ -196,6 +214,8 @@ export function ResumeManager() {
 
       const shareUrl = `${window.location.origin}/shared/resume/${token}`;
       await navigator.clipboard.writeText(shareUrl);
+      
+      console.log('Shareable link generated:', shareUrl);
       
       toast({
         title: "Success",
@@ -286,7 +306,8 @@ export function ResumeManager() {
                 </div>
                 {uploading && (
                   <div className="flex items-center justify-center p-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                    <span className="text-white">Uploading...</span>
                   </div>
                 )}
               </div>

@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, ExternalLink } from "lucide-react";
@@ -28,6 +29,7 @@ interface ResumeViewerProps {
 export function ResumeViewer({ isOpen, onClose, resume }: ResumeViewerProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export function ResumeViewer({ isOpen, onClose, resume }: ResumeViewerProps) {
       loadPdfUrl();
     } else {
       setPdfUrl(null);
+      setError(null);
     }
   }, [isOpen, resume]);
 
@@ -42,15 +45,25 @@ export function ResumeViewer({ isOpen, onClose, resume }: ResumeViewerProps) {
     if (!resume) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
+      console.log('Loading PDF for resume:', resume.file_path);
+      
       const { data, error } = await supabase.storage
         .from('resumes')
         .createSignedUrl(resume.file_path, 3600);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Storage error:', error);
+        throw error;
+      }
+      
+      console.log('PDF URL created successfully');
       setPdfUrl(data.signedUrl);
     } catch (error) {
       console.error('Error loading PDF:', error);
+      setError('Failed to load PDF preview. Please try again.');
       toast({
         title: "Error",
         description: "Failed to load PDF preview.",
@@ -117,7 +130,18 @@ export function ResumeViewer({ isOpen, onClose, resume }: ResumeViewerProps) {
         <div className="flex-1 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mr-3"></div>
+              <p className="text-white">Loading PDF preview...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <p className="text-red-400 mb-4">{error}</p>
+              <Button 
+                onClick={loadPdfUrl}
+                className="button-elegant"
+              >
+                Try Again
+              </Button>
             </div>
           ) : pdfUrl ? (
             <iframe
@@ -127,7 +151,7 @@ export function ResumeViewer({ isOpen, onClose, resume }: ResumeViewerProps) {
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              Failed to load PDF preview
+              No PDF to display
             </div>
           )}
         </div>
