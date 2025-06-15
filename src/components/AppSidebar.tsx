@@ -102,7 +102,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
                     <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
                       <span className="font-medium text-sm leading-tight">{item.title}</span>
                       <span className={`text-xs leading-tight ${
-                        activeSection === item.section ? 'text-black/80' : 'text-gray-500'
+                        activeSection === item.section ? 'text-gray-600' : 'text-gray-500'
                       }`}>
                         {item.description}
                       </span>
