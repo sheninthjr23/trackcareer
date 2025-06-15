@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,10 +86,10 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
         });
       }
 
-      // Fetch recent courses
+      // Fetch recent courses - using correct column names
       const { data: courses } = await supabase
         .from('courses')
-        .select('course_name, created_at')
+        .select('title, created_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(2);
@@ -99,17 +98,17 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
         courses.forEach(course => {
           activities.push({
             type: 'Course',
-            action: `Started ${course.course_name}`,
+            action: `Started ${course.title}`,
             time: formatTimeAgo(course.created_at),
             created_at: course.created_at
           });
         });
       }
 
-      // Fetch recent job applications
+      // Fetch recent job applications - using correct column names
       const { data: jobs } = await supabase
         .from('job_applications')
-        .select('company_name, job_title, created_at')
+        .select('company, position, created_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(2);
@@ -118,7 +117,7 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
         jobs.forEach(job => {
           activities.push({
             type: 'Job',
-            action: `Applied to ${job.company_name} - ${job.job_title}`,
+            action: `Applied to ${job.company} - ${job.position}`,
             time: formatTimeAgo(job.created_at),
             created_at: job.created_at
           });
