@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder, PictureInPicture, Share2 } from 'lucide-react';
+import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder, PictureInPicture, Share2, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePiPIntegration } from '@/hooks/usePiPIntegration';
@@ -19,6 +19,9 @@ interface CourseFolder {
   user_id: string;
   created_at: string;
   updated_at: string;
+  isShared?: boolean;
+  sharedBy?: string;
+  permissionLevel?: string;
 }
 
 interface CourseElement {
@@ -33,8 +36,17 @@ interface CourseElement {
   updated_at: string;
 }
 
+interface SharedFolder {
+  folder_id: string;
+  folder_name: string;
+  shared_by_email: string | null;
+  permission_level: string;
+  shared_at: string;
+}
+
 export function CourseManager() {
   const [folders, setFolders] = useState<CourseFolder[]>([]);
+  const [sharedFolders, setSharedFolders] = useState<SharedFolder[]>([]);
   const [elements, setElements] = useState<CourseElement[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<CourseElement | null>(null);
@@ -65,6 +77,7 @@ export function CourseManager() {
   useEffect(() => {
     if (user) {
       fetchFolders();
+      fetchSharedFolders();
       fetchElements();
     }
   }, [user]);
@@ -83,6 +96,23 @@ export function CourseManager() {
       toast({
         title: "Error",
         description: "Failed to fetch folders.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchSharedFolders = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_shared_folders_for_user');
+
+      if (error) throw error;
+      console.log('Shared folders fetched:', data);
+      setSharedFolders(data || []);
+    } catch (error) {
+      console.error('Error fetching shared folders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch shared folders.",
         variant: "destructive",
       });
     }
@@ -376,8 +406,46 @@ export function CourseManager() {
     setSharingFolder(folder);
   };
 
+  // Check if the selected folder is owned by the current user
+  const isOwnerOfSelectedFolder = () => {
+    if (!selectedFolder || !user) return false;
+    const folder = folders.find(f => f.id === selectedFolder);
+    return folder?.user_id === user.id;
+  };
+
+  // Get permission level for shared folder
+  const getSharedFolderPermission = (folderId: string) => {
+    const sharedFolder = sharedFolders.find(sf => sf.folder_id === folderId);
+    return sharedFolder?.permission_level || 'view';
+  };
+
+  // Combine owned folders and shared folders for display
+  const getAllFoldersForDisplay = () => {
+    const ownedFolders = folders.map(folder => ({
+      ...folder,
+      isShared: false
+    }));
+
+    const sharedFoldersAsDisplayFolders = sharedFolders.map(sf => ({
+      id: sf.folder_id,
+      name: sf.folder_name,
+      parent_folder_id: null, // Shared folders are displayed at root level
+      user_id: '', // Not the current user
+      created_at: sf.shared_at,
+      updated_at: sf.shared_at,
+      isShared: true,
+      sharedBy: sf.shared_by_email,
+      permissionLevel: sf.permission_level
+    }));
+
+    return [...ownedFolders, ...sharedFoldersAsDisplayFolders];
+  };
+
   const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
-    const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
+    const allFolders = getAllFoldersForDisplay();
+    const childFolders = allFolders.filter(folder => 
+      folder.parent_folder_id === parentId
+    );
     
     return childFolders.map((folder) => (
       <div key={folder.id} style={{ marginLeft: `${level * 20}px` }}>
@@ -390,44 +458,62 @@ export function CourseManager() {
           <CardHeader className="pb-2">
             <CardTitle className="text-white text-sm flex items-center justify-between">
               <div className="flex items-center">
-                {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
+                {folder.isShared ? (
+                  <Users className="h-4 w-4 mr-2 text-blue-400" />
+                ) : level > 0 ? (
+                  <Folder className="h-4 w-4 mr-2" />
+                ) : (
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                )}
                 {folder.name}
+                {folder.isShared && (
+                  <span className="ml-2 text-xs text-blue-400">
+                    (shared by {folder.sharedBy})
+                  </span>
+                )}
               </div>
-              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openShareDialog(folder)}
-                  className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-blue-500 hover:border-blue-400"
-                >
-                  <Share2 className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openEditFolderDialog(folder)}
-                  className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-gray-700 hover:border-gray-300"
-                >
-                  <Edit className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => deleteFolder(folder.id)}
-                  className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-red-500 hover:border-red-400"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
+              {!folder.isShared && (
+                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openShareDialog(folder)}
+                    className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-blue-500 hover:border-blue-400"
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEditFolderDialog(folder)}
+                    className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-gray-700 hover:border-gray-300"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => deleteFolder(folder.id)}
+                    className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-red-500 hover:border-red-400"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-xs">
               {elements.filter(e => e.folder_id === folder.id).length} elements
+              {folder.isShared && (
+                <span className="ml-2 text-blue-400">
+                  ({folder.permissionLevel} access)
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>
-        {renderFolderTree(folder.id, level + 1)}
+        {!folder.isShared && renderFolderTree(folder.id, level + 1)}
       </div>
     ));
   };
@@ -448,6 +534,9 @@ export function CourseManager() {
       openVideoInPiP(element.google_drive_link, element.title);
     }
   };
+
+  const selectedFolderData = getAllFoldersForDisplay().find(f => f.id === selectedFolder);
+  const canAddContent = selectedFolderData && !selectedFolderData.isShared;
 
   return (
     <div className="space-y-6">
@@ -471,7 +560,7 @@ export function CourseManager() {
                 </DialogTitle>
                 <DialogDescription>
                   {selectedFolder 
-                    ? `Create a new subcourse inside "${folders.find(f => f.id === selectedFolder)?.name}"`
+                    ? `Create a new subcourse inside "${selectedFolderData?.name}"`
                     : 'Create a new course folder to organize your learning content.'
                   }
                 </DialogDescription>
@@ -495,7 +584,7 @@ export function CourseManager() {
             </DialogContent>
           </Dialog>
 
-          {selectedFolder && (
+          {selectedFolder && canAddContent && (
             <Dialog open={isElementDialogOpen} onOpenChange={setIsElementDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="button-elegant">
@@ -563,8 +652,13 @@ export function CourseManager() {
         <div className="lg:col-span-3">
           {selectedFolder ? (
             <div>
-              <h3 className="text-lg font-semibold text-white mb-4">
-                {folders.find(f => f.id === selectedFolder)?.name} Content
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                {selectedFolderData?.name} Content
+                {selectedFolderData?.isShared && (
+                  <span className="ml-2 text-sm text-blue-400">
+                    (Shared - {getSharedFolderPermission(selectedFolder)} access)
+                  </span>
+                )}
               </h3>
               <div className="space-y-4">
                 {filteredElements.map((element, index) => (
@@ -575,24 +669,26 @@ export function CourseManager() {
                           <Video className="h-4 w-4 mr-2" />
                           {element.course_order}. {element.title}
                         </CardTitle>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditDialog(element)}
-                            className="h-8 w-8 p-0 border-gray-400 text-gray-400 hover:bg-gray-700 hover:border-gray-300"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteElement(element.id)}
-                            className="h-8 w-8 p-0 border-gray-400 text-gray-400 hover:bg-red-500 hover:border-red-400"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        {element.user_id === user?.id && (
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditDialog(element)}
+                              className="h-8 w-8 p-0 border-gray-400 text-gray-400 hover:bg-gray-700 hover:border-gray-300"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteElement(element.id)}
+                              className="h-8 w-8 p-0 border-gray-400 text-gray-400 hover:bg-red-500 hover:border-red-400"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
