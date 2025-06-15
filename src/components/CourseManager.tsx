@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder, PictureInPicture } from 'lucide-react';
+import { FolderOpen, Plus, Video, ArrowUp, ArrowDown, Edit, Trash2, Folder, PictureInPicture, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePiPIntegration } from '@/hooks/usePiPIntegration';
+import { FolderShareManager } from './FolderShareManager';
 
 interface CourseFolder {
   id: string;
@@ -39,6 +40,7 @@ export function CourseManager() {
   const [selectedElement, setSelectedElement] = useState<CourseElement | null>(null);
   const [editingElement, setEditingElement] = useState<CourseElement | null>(null);
   const [editingFolder, setEditingFolder] = useState<CourseFolder | null>(null);
+  const [sharingFolder, setSharingFolder] = useState<CourseFolder | null>(null);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [isElementDialogOpen, setIsElementDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -370,6 +372,10 @@ export function CourseManager() {
     setIsEditFolderDialogOpen(true);
   };
 
+  const openShareDialog = (folder: CourseFolder) => {
+    setSharingFolder(folder);
+  };
+
   const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
     const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
     
@@ -388,6 +394,14 @@ export function CourseManager() {
                 {folder.name}
               </div>
               <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openShareDialog(folder)}
+                  className="h-6 w-6 p-0 border-gray-400 text-gray-400 hover:bg-blue-500 hover:border-blue-400"
+                >
+                  <Share2 className="h-3 w-3" />
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -622,6 +636,15 @@ export function CourseManager() {
           )}
         </div>
       </div>
+
+      {/* Folder Share Manager */}
+      {sharingFolder && (
+        <FolderShareManager
+          folderId={sharingFolder.id}
+          folderName={sharingFolder.name}
+          onClose={() => setSharingFolder(null)}
+        />
+      )}
 
       {/* Edit Folder Dialog */}
       <Dialog open={isEditFolderDialogOpen} onOpenChange={setIsEditFolderDialogOpen}>

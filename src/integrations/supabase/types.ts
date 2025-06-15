@@ -291,6 +291,53 @@ export type Database = {
           },
         ]
       }
+      folder_shares: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          folder_id: string
+          id: string
+          is_active: boolean
+          permission_level: string
+          share_token: string
+          shared_by: string
+          shared_with_email: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          folder_id: string
+          id?: string
+          is_active?: boolean
+          permission_level?: string
+          share_token?: string
+          shared_by: string
+          shared_with_email: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          folder_id?: string
+          id?: string
+          is_active?: boolean
+          permission_level?: string
+          share_token?: string
+          shared_by?: string
+          shared_with_email?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "folder_shares_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "course_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           company_name: string
@@ -573,7 +620,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_folder_shares: {
+        Args: { folder_uuid: string }
+        Returns: {
+          id: string
+          shared_with_email: string
+          permission_level: string
+          is_active: boolean
+          expires_at: string
+          created_at: string
+        }[]
+      }
+      get_shared_folders_for_user: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          folder_id: string
+          folder_name: string
+          shared_by_email: string
+          permission_level: string
+          shared_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
