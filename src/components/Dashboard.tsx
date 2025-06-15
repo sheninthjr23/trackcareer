@@ -108,7 +108,7 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
       // Fetch recent job applications - using correct column names
       const { data: jobs } = await supabase
         .from('job_applications')
-        .select('company, position, created_at')
+        .select('company_name, role, created_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(2);
@@ -117,7 +117,7 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
         jobs.forEach(job => {
           activities.push({
             type: 'Job',
-            action: `Applied to ${job.company} - ${job.position}`,
+            action: `Applied to ${job.company_name} - ${job.role}`,
             time: formatTimeAgo(job.created_at),
             created_at: job.created_at
           });
