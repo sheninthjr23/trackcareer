@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +22,7 @@ interface FolderShare {
 interface SharedFolder {
   folder_id: string;
   folder_name: string;
-  shared_by_email: string;
+  shared_by_email: string | null;
   permission_level: string;
   shared_at: string;
 }
@@ -298,7 +297,7 @@ export function FolderShareManager({ folderId, folderName, onClose }: FolderShar
                       <div>
                         <p className="text-white font-medium">{folder.folder_name}</p>
                         <p className="text-muted-foreground text-sm">
-                          Shared by {folder.shared_by_email}
+                          Shared by {folder.shared_by_email || 'Unknown user'}
                         </p>
                         <p className="text-muted-foreground text-xs capitalize">
                           {folder.permission_level} access
