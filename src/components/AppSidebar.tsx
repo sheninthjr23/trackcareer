@@ -101,7 +101,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
                     <div className="flex flex-col items-start">
                       <span className="font-medium">{item.title}</span>
                       <span className={`text-xs ${
-                        activeSection === item.section ? 'text-black/60' : 'text-gray-500'
+                        activeSection === item.section ? 'text-black/70' : 'text-gray-400'
                       }`}>
                         {item.description}
                       </span>
