@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserPlus, Mail, Lock, Sparkles } from "lucide-react";
 
 export function Auth() {
   const [loading, setLoading] = useState(false);
@@ -140,108 +139,174 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-4">
-      <Card className="w-full max-w-md elegant-card">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl font-bold text-gradient">Welcome</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Sign in to access your professional dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin" className="space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-white">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="elegant-input"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-white">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="elegant-input"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full button-elegant" disabled={loading}>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </form>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header Section */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center">
+              <Sparkles className="w-8 h-8 text-black" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              Welcome Back
+            </h1>
+            <p className="text-gray-400 text-sm">
+              Sign in to access your professional dashboard
+            </p>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm shadow-2xl">
+          <CardContent className="p-8">
+            <Tabs defaultValue="signin" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20">
+                <TabsTrigger 
+                  value="signin" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-black text-white"
+                >
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="signup"
+                  className="data-[state=active]:bg-white data-[state=active]:text-black text-white"
+                >
+                  Sign Up
+                </TabsTrigger>
+              </TabsList>
               
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-white/20" />
+              <TabsContent value="signin" className="space-y-6">
+                <form onSubmit={handleSignIn} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email" className="text-white text-sm font-medium">
+                      Email Address
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password" className="text-white text-sm font-medium">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-white text-black hover:bg-gray-100 font-medium transition-all duration-200" 
+                    disabled={loading}
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                </form>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-white/20" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-black px-4 text-gray-400 font-medium">Or continue with</span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-gray-900 px-2 text-muted-foreground">Or</span>
-                </div>
-              </div>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full button-elegant-outline"
-                onClick={handleMagicLink}
-                disabled={loading}
-              >
-                Send Magic Link (No Password)
-              </Button>
-            </TabsContent>
-            
-            <TabsContent value="signup" className="space-y-4">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-white">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="elegant-input"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-white">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="elegant-input"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full button-elegant" disabled={loading}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  {loading ? 'Creating account...' : 'Sign Up'}
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full h-12 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+                  onClick={handleMagicLink}
+                  disabled={loading}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Magic Link
                 </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+              </TabsContent>
+              
+              <TabsContent value="signup" className="space-y-6">
+                <form onSubmit={handleSignUp} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className="text-white text-sm font-medium">
+                      Email Address
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className="text-white text-sm font-medium">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="Create a strong password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-white text-black hover:bg-gray-100 font-medium transition-all duration-200" 
+                    disabled={loading}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {loading ? 'Creating account...' : 'Create Account'}
+                  </Button>
+                </form>
+                
+                <div className="text-center">
+                  <p className="text-xs text-gray-400">
+                    By creating an account, you agree to our{' '}
+                    <span className="text-white underline cursor-pointer">Terms of Service</span>
+                    {' '}and{' '}
+                    <span className="text-white underline cursor-pointer">Privacy Policy</span>
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
