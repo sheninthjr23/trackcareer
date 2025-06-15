@@ -1,8 +1,6 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, ExternalLink, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FileText, Download, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 
 interface PDFViewerProps {
   pdfUrl: string | null;
@@ -144,15 +142,6 @@ export function PDFViewer({ pdfUrl, fileName, onDownload, className = "" }: PDFV
           Retry
         </Button>
       </div>
-
-      {/* Browser Warning */}
-      <Alert className="border-amber-500/50 bg-amber-500/10 mb-4">
-        <AlertTriangle className="h-4 w-4 text-amber-500" />
-        <AlertDescription className="text-amber-200">
-          <strong>Viewing PDFs inline:</strong> Some browsers may block PDF display for security reasons. 
-          If the PDF doesn't appear below, use the "PDF Viewer" button above for the best experience.
-        </AlertDescription>
-      </Alert>
 
       {/* PDF Container */}
       <div className="relative bg-gray-900 rounded-lg border border-white/20 overflow-hidden" style={{ height: '700px' }}>
