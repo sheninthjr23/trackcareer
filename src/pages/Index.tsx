@@ -10,11 +10,12 @@ import { ActivityTracker } from '@/components/ActivityTracker';
 import { JobApplicationTracker } from '@/components/JobApplicationTracker';
 import { Dashboard } from '@/components/Dashboard';
 import { Settings } from '@/components/Settings';
+import { Analytics } from '@/components/Analytics';
 import { Auth } from '@/components/Auth';
 import { Header } from '@/components/Header';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
-export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'settings';
+export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'analytics' | 'settings';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -52,6 +53,8 @@ function AppContent() {
         return <ActivityTracker />;
       case 'jobs':
         return <JobApplicationTracker />;
+      case 'analytics':
+        return <Analytics />;
       case 'settings':
         return <Settings />;
       default:
@@ -75,6 +78,8 @@ function AppContent() {
         return 'Activity Tracking';
       case 'jobs':
         return 'Job Applications';
+      case 'analytics':
+        return 'Analytics & Reports';
       case 'settings':
         return 'Account Settings';
       default:
@@ -98,6 +103,8 @@ function AppContent() {
         return 'Monitor your tasks and activities';
       case 'jobs':
         return 'Keep track of your job applications and progress';
+      case 'analytics':
+        return 'View comprehensive analytics and progress reports';
       case 'settings':
         return 'Manage your account and preferences';
       default:

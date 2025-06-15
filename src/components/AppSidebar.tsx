@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { FileText, BookOpen, Target, Briefcase, LayoutGrid, Sparkles, MessageCircleQuestion, Youtube, Settings } from "lucide-react";
+import { FileText, BookOpen, Target, Briefcase, LayoutGrid, Sparkles, MessageCircleQuestion, Youtube, Settings, BarChart3 } from "lucide-react";
 import type { Section } from "@/pages/Index";
 
 interface AppSidebarProps {
@@ -60,6 +60,12 @@ const menuItems = [
     section: "jobs" as Section,
     icon: Briefcase,
     description: "Career Tracker"
+  },
+  {
+    title: "Analytics & Reports",
+    section: "analytics" as Section,
+    icon: BarChart3,
+    description: "Progress Analytics"
   },
   {
     title: "Settings",
