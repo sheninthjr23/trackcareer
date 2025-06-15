@@ -9,11 +9,12 @@ import { YoutubeManager } from '@/components/YoutubeManager';
 import { ActivityTracker } from '@/components/ActivityTracker';
 import { JobApplicationTracker } from '@/components/JobApplicationTracker';
 import { Dashboard } from '@/components/Dashboard';
+import { Settings } from '@/components/Settings';
 import { Auth } from '@/components/Auth';
 import { Header } from '@/components/Header';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
-export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs';
+export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'settings';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -51,6 +52,8 @@ function AppContent() {
         return <ActivityTracker />;
       case 'jobs':
         return <JobApplicationTracker />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard onSectionChange={handleSectionChange} />;
     }
@@ -72,6 +75,8 @@ function AppContent() {
         return 'Activity Tracking';
       case 'jobs':
         return 'Job Applications';
+      case 'settings':
+        return 'Account Settings';
       default:
         return 'Personal Dashboard';
     }
@@ -93,6 +98,8 @@ function AppContent() {
         return 'Monitor your tasks and activities';
       case 'jobs':
         return 'Keep track of your job applications and progress';
+      case 'settings':
+        return 'Manage your account and preferences';
       default:
         return 'Manage your professional journey with style';
     }
