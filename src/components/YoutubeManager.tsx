@@ -980,7 +980,7 @@ export function YoutubeManager() {
                               href={video.youtube_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-white hover:text-gray-300 text-sm transition-colors"
+                              className="flex items-center gap-2 text-red-500 hover:text-red-400 text-sm transition-colors"
                             >
                               <Youtube className="h-4 w-4" />
                               Watch Video
