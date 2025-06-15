@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Video, CheckSquare, Trash2, Edit, Youtube, Folder } from 'lucide-react';
+import { FolderOpen, Plus, Video, CheckSquare, Trash2, Edit, Youtube, Folder, Play, Clock, CheckCircle, TrendingUp, BookOpen, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -501,29 +500,64 @@ export function YoutubeManager() {
     setIsEditFolderDialogOpen(true);
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'watching':
+      case 'in-progress':
+        return <Play className="h-4 w-4 text-blue-500" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-500/10 border-yellow-500/20';
+      case 'watching':
+      case 'in-progress':
+        return 'bg-blue-500/10 border-blue-500/20';
+      case 'completed':
+        return 'bg-green-500/10 border-green-500/20';
+      default:
+        return 'bg-gray-500/10 border-gray-500/20';
+    }
+  };
+
   const renderFolderTree = (parentId: string | null = null, level: number = 0) => {
     const childFolders = folders.filter(folder => folder.parent_folder_id === parentId);
     
     return childFolders.map((folder) => (
-      <div key={folder.id} style={{ marginLeft: `${level * 20}px` }}>
+      <div key={folder.id} style={{ marginLeft: `${level * 16}px` }} className="group">
         <Card 
-          className={`elegant-card cursor-pointer transition-all hover:scale-105 mb-2 ${
-            selectedFolder === folder.id ? 'ring-2 ring-primary' : ''
+          className={`elegant-card cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl mb-3 border-2 ${
+            selectedFolder === folder.id 
+              ? 'ring-2 ring-red-500 border-red-500/30 bg-gradient-to-r from-red-500/5 to-transparent' 
+              : 'border-white/10 hover:border-red-500/30'
           }`}
           onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
         >
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-3">
             <CardTitle className="text-white text-sm flex items-center justify-between">
               <div className="flex items-center">
-                {level > 0 ? <Folder className="h-4 w-4 mr-2" /> : <FolderOpen className="h-4 w-4 mr-2" />}
-                {folder.name}
+                <div className={`p-2 rounded-lg mr-3 ${selectedFolder === folder.id ? 'bg-red-500' : 'bg-white/10'}`}>
+                  {level > 0 ? 
+                    <Folder className={`h-4 w-4 ${selectedFolder === folder.id ? 'text-white' : 'text-red-500'}`} /> : 
+                    <FolderOpen className={`h-4 w-4 ${selectedFolder === folder.id ? 'text-white' : 'text-red-500'}`} />
+                  }
+                </div>
+                <span className="font-semibold">{folder.name}</span>
               </div>
-              <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => openEditFolderDialog(folder)}
-                  className="button-elegant-outline h-6 w-6 p-0"
+                  className="button-elegant-outline h-7 w-7 p-0 hover:bg-blue-500 hover:border-blue-500"
                 >
                   <Edit className="h-3 w-3" />
                 </Button>
@@ -531,17 +565,24 @@ export function YoutubeManager() {
                   size="sm"
                   variant="outline"
                   onClick={() => deleteFolder(folder.id)}
-                  className="button-elegant-outline h-6 w-6 p-0 hover:bg-red-500"
+                  className="button-elegant-outline h-7 w-7 p-0 hover:bg-red-500 hover:border-red-500"
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-xs">
-              {videos.filter(v => v.folder_id === folder.id).length} videos, {todos.filter(t => t.folder_id === folder.id).length} todos
-            </p>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Video className="h-3 w-3" />
+                <span>{videos.filter(v => v.folder_id === folder.id).length} videos</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                <span>{todos.filter(t => t.folder_id === folder.id).length} tasks</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
         {renderFolderTree(folder.id, level + 1)}
@@ -560,27 +601,80 @@ export function YoutubeManager() {
   const completedVideos = filteredVideos.filter(v => v.status === 'completed').length;
   const completedTodos = filteredTodos.filter(t => t.status === 'completed').length;
 
+  const totalVideos = videos.length;
+  const totalCompletedVideos = videos.filter(v => v.status === 'completed').length;
+  const totalTodos = todos.length;
+  const totalCompletedTodos = todos.filter(t => t.status === 'completed').length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Youtube className="h-8 w-8 text-red-500" />
-            YouTube Management
-          </h1>
-          <p className="text-muted-foreground">Organize your YouTube learning content and todos</p>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="text-center py-12 bg-gradient-to-r from-red-500/10 via-purple-500/10 to-pink-500/10 rounded-3xl border border-white/10">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="p-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl">
+            <Youtube className="h-12 w-12 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">YouTube Learning Hub</h1>
+            <p className="text-xl text-muted-foreground">Transform your YouTube consumption into structured learning</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        
+        {/* Global Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto mt-8">
+          <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <FolderOpen className="h-5 w-5 text-blue-400" />
+              <span className="text-2xl font-bold text-white">{folders.length}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Learning Folders</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Video className="h-5 w-5 text-red-400" />
+              <span className="text-2xl font-bold text-white">{totalVideos}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Total Videos</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <span className="text-2xl font-bold text-white">{totalCompletedVideos}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Completed Videos</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Target className="h-5 w-5 text-purple-400" />
+              <span className="text-2xl font-bold text-white">{totalCompletedTodos}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Tasks Done</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-white">Manage Content</h2>
+          {selectedFolder && (
+            <div className="px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-full text-red-400 text-sm">
+              {folders.find(f => f.id === selectedFolder)?.name}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3">
           <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="button-elegant-outline">
+              <Button variant="outline" className="button-elegant-outline hover:bg-blue-500 hover:border-blue-500">
                 <FolderOpen className="h-4 w-4 mr-2" />
                 {selectedFolder ? 'New Subfolder' : 'New Folder'}
               </Button>
             </DialogTrigger>
-            <DialogContent className="elegant-card">
+            <DialogContent className="elegant-card max-w-md">
               <DialogHeader>
-                <DialogTitle className="text-white">
+                <DialogTitle className="text-white flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-blue-400" />
                   {selectedFolder ? 'Create New Subfolder' : 'Create New Folder'}
                 </DialogTitle>
                 <DialogDescription>
@@ -598,7 +692,7 @@ export function YoutubeManager() {
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     placeholder="Enter folder name"
-                    className="input-elegant"
+                    className="input-elegant mt-2"
                   />
                 </div>
                 <Button onClick={createFolder} disabled={!newFolderName.trim()} className="button-elegant w-full">
@@ -613,16 +707,19 @@ export function YoutubeManager() {
             <>
               <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="button-elegant">
+                  <Button className="button-elegant bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700">
                     <Video className="h-4 w-4 mr-2" />
                     Add Video
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="elegant-card">
+                <DialogContent className="elegant-card max-w-lg">
                   <DialogHeader>
-                    <DialogTitle className="text-white">Add YouTube Video</DialogTitle>
+                    <DialogTitle className="text-white flex items-center gap-2">
+                      <Video className="h-5 w-5 text-red-400" />
+                      Add YouTube Video
+                    </DialogTitle>
                     <DialogDescription>
-                      Add a new YouTube video to track.
+                      Add a new YouTube video to your learning collection.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -633,7 +730,7 @@ export function YoutubeManager() {
                         value={newVideo.title}
                         onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
                         placeholder="Enter video title"
-                        className="input-elegant"
+                        className="input-elegant mt-2"
                       />
                     </div>
                     <div>
@@ -642,30 +739,31 @@ export function YoutubeManager() {
                         id="youtubeUrl"
                         value={newVideo.youtube_url}
                         onChange={(e) => setNewVideo({ ...newVideo, youtube_url: e.target.value })}
-                        placeholder="Enter YouTube URL"
-                        className="input-elegant"
+                        placeholder="https://youtube.com/watch?v=..."
+                        className="input-elegant mt-2"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="videoContent" className="text-white">Notes</Label>
+                      <Label htmlFor="videoContent" className="text-white">Learning Notes</Label>
                       <Textarea
                         id="videoContent"
                         value={newVideo.content}
                         onChange={(e) => setNewVideo({ ...newVideo, content: e.target.value })}
-                        placeholder="Enter notes about the video"
-                        className="input-elegant"
+                        placeholder="What will you learn from this video?"
+                        className="input-elegant mt-2"
+                        rows={3}
                       />
                     </div>
                     <div>
                       <Label htmlFor="videoStatus" className="text-white">Status</Label>
                       <Select value={newVideo.status} onValueChange={(value) => setNewVideo({ ...newVideo, status: value })}>
-                        <SelectTrigger className="input-elegant">
+                        <SelectTrigger className="input-elegant mt-2">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="watching">Watching</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="pending">📋 Pending</SelectItem>
+                          <SelectItem value="watching">▶️ Watching</SelectItem>
+                          <SelectItem value="completed">✅ Completed</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -679,27 +777,30 @@ export function YoutubeManager() {
 
               <Dialog open={isTodoDialogOpen} onOpenChange={setIsTodoDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="button-elegant-outline">
-                    <CheckSquare className="h-4 w-4 mr-2" />
-                    Add Todo
+                  <Button variant="outline" className="button-elegant-outline hover:bg-purple-500 hover:border-purple-500">
+                    <Target className="h-4 w-4 mr-2" />
+                    Add Task
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="elegant-card">
+                <DialogContent className="elegant-card max-w-lg">
                   <DialogHeader>
-                    <DialogTitle className="text-white">Add Todo</DialogTitle>
+                    <DialogTitle className="text-white flex items-center gap-2">
+                      <Target className="h-5 w-5 text-purple-400" />
+                      Add Learning Task
+                    </DialogTitle>
                     <DialogDescription>
-                      Add a new todo item to track.
+                      Create a task related to your learning goals.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="todoTitle" className="text-white">Title</Label>
+                      <Label htmlFor="todoTitle" className="text-white">Task Title</Label>
                       <Input
                         id="todoTitle"
                         value={newTodo.title}
                         onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-                        placeholder="Enter todo title"
-                        className="input-elegant"
+                        placeholder="What do you need to do?"
+                        className="input-elegant mt-2"
                       />
                     </div>
                     <div>
@@ -708,26 +809,27 @@ export function YoutubeManager() {
                         id="todoContent"
                         value={newTodo.content}
                         onChange={(e) => setNewTodo({ ...newTodo, content: e.target.value })}
-                        placeholder="Enter todo description"
-                        className="input-elegant"
+                        placeholder="Describe the task details..."
+                        className="input-elegant mt-2"
+                        rows={3}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="todoStatus" className="text-white">Status</Label>
+                      <Label htmlFor="todoStatus" className="text-white">Priority</Label>
                       <Select value={newTodo.status} onValueChange={(value) => setNewTodo({ ...newTodo, status: value })}>
-                        <SelectTrigger className="input-elegant">
-                          <SelectValue placeholder="Select status" />
+                        <SelectTrigger className="input-elegant mt-2">
+                          <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in-progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="pending">⏳ Pending</SelectItem>
+                          <SelectItem value="in-progress">🔄 In Progress</SelectItem>
+                          <SelectItem value="completed">✅ Completed</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <Button onClick={createTodo} disabled={!newTodo.title.trim()} className="button-elegant w-full">
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Todo
+                      Add Task
                     </Button>
                   </div>
                 </DialogContent>
@@ -739,73 +841,129 @@ export function YoutubeManager() {
 
       {/* Progress Section */}
       {selectedFolder && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Card className="elegant-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Video Progress</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="elegant-card bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-400" />
+                Video Progress
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Completed Videos</span>
-                <span className="text-white font-bold">{completedVideos}/{filteredVideos.length}</span>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground">Completed</span>
+                <span className="text-white font-bold text-xl">{completedVideos}/{filteredVideos.length}</span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+              <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
                 <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-3 rounded-full transition-all duration-300 ease-out" 
                   style={{ width: `${filteredVideos.length > 0 ? (completedVideos / filteredVideos.length) * 100 : 0}%` }}
                 ></div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {filteredVideos.length > 0 ? Math.round((completedVideos / filteredVideos.length) * 100) : 0}% complete
+              </p>
             </CardContent>
           </Card>
           
-          <Card className="elegant-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Todo Progress</CardTitle>
+          <Card className="elegant-card bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-400" />
+                Task Progress
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Completed Todos</span>
-                <span className="text-white font-bold">{completedTodos}/{filteredTodos.length}</span>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground">Completed</span>
+                <span className="text-white font-bold text-xl">{completedTodos}/{filteredTodos.length}</span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+              <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
                 <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                  className="bg-gradient-to-r from-blue-400 to-cyan-500 h-3 rounded-full transition-all duration-300 ease-out" 
                   style={{ width: `${filteredTodos.length > 0 ? (completedTodos / filteredTodos.length) * 100 : 0}%` }}
                 ></div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {filteredTodos.length > 0 ? Math.round((completedTodos / filteredTodos.length) * 100) : 0}% complete
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="elegant-card bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-purple-400" />
+                Learning Score
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground">Overall</span>
+                <span className="text-white font-bold text-xl">
+                  {filteredVideos.length + filteredTodos.length > 0 
+                    ? Math.round(((completedVideos + completedTodos) / (filteredVideos.length + filteredTodos.length)) * 100)
+                    : 0}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
+                <div 
+                  className="bg-gradient-to-r from-purple-400 to-pink-500 h-3 rounded-full transition-all duration-300 ease-out" 
+                  style={{ 
+                    width: `${(filteredVideos.length + filteredTodos.length) > 0 
+                      ? ((completedVideos + completedTodos) / (filteredVideos.length + filteredTodos.length)) * 100 
+                      : 0}%` 
+                  }}
+                ></div>
+              </div>
+              <p className="text-xs text-muted-foreground">Combined progress</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1">
-          <h3 className="text-lg font-semibold text-white mb-4">Folders</h3>
+          <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <Folder className="h-5 w-5 text-blue-400" />
+            Learning Folders
+          </h3>
           <div className="space-y-2">
-            {renderFolderTree()}
+            {folders.length === 0 ? (
+              <Card className="elegant-card text-center p-8">
+                <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No folders yet</p>
+                <p className="text-sm text-muted-foreground">Create your first learning folder to get started</p>
+              </Card>
+            ) : (
+              renderFolderTree()
+            )}
           </div>
         </div>
 
         <div className="lg:col-span-3">
           {selectedFolder ? (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Videos</h3>
-                <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                  <Video className="h-5 w-5 text-red-400" />
+                  YouTube Videos
+                </h3>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {filteredVideos.map((video) => (
-                    <Card key={video.id} className="elegant-card">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-white text-sm flex items-center justify-between">
-                          <div className="flex items-center">
-                            <Video className="h-4 w-4 mr-2" />
-                            {video.title}
+                    <Card key={video.id} className={`elegant-card group hover:shadow-xl transition-all duration-300 ${getStatusColor(video.status)}`}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-white text-base flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {getStatusIcon(video.status)}
+                            <span className="truncate">{video.title}</span>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => openEditVideoDialog(video)}
-                              className="button-elegant-outline h-8 w-8 p-0"
+                              className="button-elegant-outline h-7 w-7 p-0 hover:bg-blue-500"
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
@@ -813,69 +971,91 @@ export function YoutubeManager() {
                               size="sm"
                               variant="outline"
                               onClick={() => deleteVideo(video.id)}
-                              className="button-elegant-outline h-8 w-8 p-0 hover:bg-red-500"
+                              className="button-elegant-outline h-7 w-7 p-0 hover:bg-red-500"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
-                            <Select value={video.status} onValueChange={(value) => updateVideoStatus(video.id, value)}>
-                              <SelectTrigger className="w-32 h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="watching">Watching</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </div>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-3">
                         {video.content && (
-                          <p className="text-muted-foreground text-sm mb-3">
+                          <p className="text-muted-foreground text-sm leading-relaxed">
                             {video.content}
                           </p>
                         )}
-                        {video.youtube_url && (
-                          <a
-                            href={video.youtube_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-red-500 hover:text-red-400 text-sm"
-                          >
-                            Watch on YouTube
-                          </a>
-                        )}
+                        <div className="flex items-center justify-between">
+                          {video.youtube_url && (
+                            <a
+                              href={video.youtube_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm transition-colors"
+                            >
+                              <Youtube className="h-4 w-4" />
+                              Watch Video
+                            </a>
+                          )}
+                          <Select value={video.status} onValueChange={(value) => updateVideoStatus(video.id, value)}>
+                            <SelectTrigger className="w-32 h-8 bg-white/5 border-white/10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="watching">Watching</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
+                  {filteredVideos.length === 0 && (
+                    <div className="xl:col-span-2">
+                      <Card className="elegant-card text-center p-12">
+                        <Video className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <h4 className="text-white text-lg font-semibold mb-2">No videos yet</h4>
+                        <p className="text-muted-foreground mb-4">Start adding YouTube videos to track your learning</p>
+                        <Button
+                          onClick={() => setIsVideoDialogOpen(true)}
+                          className="button-elegant"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Video
+                        </Button>
+                      </Card>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Todos</h3>
-                <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                  <Target className="h-5 w-5 text-purple-400" />
+                  Learning Tasks
+                </h3>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {filteredTodos.map((todo) => (
-                    <Card key={todo.id} className="elegant-card">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-white text-sm flex items-center justify-between">
-                          <div className="flex items-center">
+                    <Card key={todo.id} className={`elegant-card group hover:shadow-xl transition-all duration-300 ${getStatusColor(todo.status)}`}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-white text-base flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <Checkbox
                               checked={todo.status === 'completed'}
                               onCheckedChange={() => toggleTodoStatus(todo)}
-                              className="mr-3"
+                              className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                             />
-                            <CheckSquare className="h-4 w-4 mr-2" />
-                            <span className={todo.status === 'completed' ? 'line-through opacity-60' : ''}>
+                            {getStatusIcon(todo.status)}
+                            <span className={`truncate ${todo.status === 'completed' ? 'line-through opacity-60' : ''}`}>
                               {todo.title}
                             </span>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => openEditTodoDialog(todo)}
-                              className="button-elegant-outline h-8 w-8 p-0"
+                              className="button-elegant-outline h-7 w-7 p-0 hover:bg-blue-500"
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
@@ -883,7 +1063,7 @@ export function YoutubeManager() {
                               size="sm"
                               variant="outline"
                               onClick={() => deleteTodo(todo.id)}
-                              className="button-elegant-outline h-8 w-8 p-0 hover:bg-red-500"
+                              className="button-elegant-outline h-7 w-7 p-0 hover:bg-red-500"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -892,20 +1072,47 @@ export function YoutubeManager() {
                       </CardHeader>
                       {todo.content && (
                         <CardContent>
-                          <p className="text-muted-foreground text-sm">
+                          <p className="text-muted-foreground text-sm leading-relaxed">
                             {todo.content}
                           </p>
                         </CardContent>
                       )}
                     </Card>
                   ))}
+                  {filteredTodos.length === 0 && (
+                    <div className="xl:col-span-2">
+                      <Card className="elegant-card text-center p-12">
+                        <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <h4 className="text-white text-lg font-semibold mb-2">No tasks yet</h4>
+                        <p className="text-muted-foreground mb-4">Create learning tasks to track your progress</p>
+                        <Button
+                          onClick={() => setIsTodoDialogOpen(true)}
+                          className="button-elegant"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Task
+                        </Button>
+                      </Card>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              Select a folder to view content
-            </div>
+            <Card className="elegant-card text-center p-16">
+              <div className="max-w-md mx-auto">
+                <div className="p-6 bg-gradient-to-br from-red-500/20 to-purple-500/20 rounded-full w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                  <FolderOpen className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Select a Learning Folder</h3>
+                <p className="text-muted-foreground text-lg mb-6">
+                  Choose a folder from the sidebar to view and manage your YouTube videos and learning tasks
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Start by creating your first folder to organize your learning content
+                </p>
+              </div>
+            </Card>
           )}
         </div>
       </div>
