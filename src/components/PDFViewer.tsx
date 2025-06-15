@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, ExternalLink, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,25 +12,65 @@ interface PDFViewerProps {
 }
 
 export function PDFViewer({ pdfUrl, fileName, onDownload, className = "" }: PDFViewerProps) {
-  const [showFallback, setShowFallback] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFallback, setShowFallback] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
+  const [currentMethod, setCurrentMethod] = useState<'pdfjs' | 'direct'>('pdfjs');
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (pdfUrl) {
-      setIsLoading(true);
-      setShowFallback(false);
-      setLoadAttempts(0);
-      
-      // Set a timeout to show fallback if PDF doesn't load
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-        setShowFallback(true);
-      }, 5000);
-
-      return () => clearTimeout(timer);
+      resetLoadingState();
+      startLoadingTimeout();
     }
+    
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
   }, [pdfUrl]);
+
+  const resetLoadingState = () => {
+    setIsLoading(true);
+    setShowFallback(false);
+    setCurrentMethod('pdfjs');
+    setLoadAttempts(0);
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+  };
+
+  const startLoadingTimeout = () => {
+    loadTimeoutRef.current = setTimeout(() => {
+      console.log('PDF loading timeout - switching to fallback');
+      setIsLoading(false);
+      if (currentMethod === 'pdfjs') {
+        setCurrentMethod('direct');
+        setShowFallback(true);
+      }
+    }, 4000);
+  };
+
+  const handleIframeLoad = () => {
+    console.log(`${currentMethod} PDF loaded successfully`);
+    setIsLoading(false);
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+  };
+
+  const handleIframeError = () => {
+    console.log(`${currentMethod} PDF failed to load`);
+    if (currentMethod === 'pdfjs') {
+      console.log('Switching to direct PDF method');
+      setCurrentMethod('direct');
+      setShowFallback(true);
+    } else {
+      setIsLoading(false);
+    }
+  };
 
   const openWithPdfViewer = () => {
     if (pdfUrl) {
@@ -46,19 +86,8 @@ export function PDFViewer({ pdfUrl, fileName, onDownload, className = "" }: PDFV
 
   const retryLoad = () => {
     setLoadAttempts(prev => prev + 1);
-    setIsLoading(true);
-    setShowFallback(false);
-    
-    // Force iframe reload by changing the key
-    const iframe = document.querySelector('iframe[data-pdf-viewer]') as HTMLIFrameElement;
-    if (iframe) {
-      iframe.src = iframe.src;
-    }
-    
-    setTimeout(() => {
-      setIsLoading(false);
-      setShowFallback(true);
-    }, 3000);
+    resetLoadingState();
+    startLoadingTimeout();
   };
 
   if (!pdfUrl) {
@@ -73,6 +102,7 @@ export function PDFViewer({ pdfUrl, fileName, onDownload, className = "" }: PDFV
   }
 
   const pdfViewerUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
+  const directPdfUrl = `${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&zoom=page-fit&view=FitH`;
 
   return (
     <div className={`relative ${className}`}>
@@ -104,17 +134,15 @@ export function PDFViewer({ pdfUrl, fileName, onDownload, className = "" }: PDFV
           <Download className="h-4 w-4 mr-2" />
           Download
         </Button>
-        {showFallback && (
-          <Button
-            onClick={retryLoad}
-            variant="outline"
-            className="button-elegant-outline flex-1 sm:flex-none"
-            size="sm"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        )}
+        <Button
+          onClick={retryLoad}
+          variant="outline"
+          className="button-elegant-outline flex-1 sm:flex-none"
+          size="sm"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
+        </Button>
       </div>
 
       {/* Browser Warning */}
@@ -133,54 +161,45 @@ export function PDFViewer({ pdfUrl, fileName, onDownload, className = "" }: PDFV
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
               <p className="text-white text-sm">Loading PDF preview...</p>
-              {loadAttempts > 0 && (
-                <p className="text-gray-400 text-xs mt-1">Attempt {loadAttempts + 1}</p>
-              )}
+              <p className="text-gray-400 text-xs mt-1">
+                Method: {currentMethod === 'pdfjs' ? 'PDF.js Viewer' : 'Direct PDF'}
+                {loadAttempts > 0 && ` (Attempt ${loadAttempts + 1})`}
+              </p>
             </div>
           </div>
         )}
 
-        {/* Primary PDF.js viewer iframe */}
-        <iframe
-          key={`pdf-viewer-${loadAttempts}`}
-          src={pdfViewerUrl}
-          className="w-full h-full border-0"
-          title={`${fileName} - PDF Viewer`}
-          data-pdf-viewer="true"
-          onLoad={() => {
-            console.log('PDF.js viewer loaded successfully');
-            setIsLoading(false);
-          }}
-          onError={() => {
-            console.log('PDF.js viewer failed to load, trying direct PDF');
-            setIsLoading(false);
-            setShowFallback(true);
-          }}
-          sandbox="allow-scripts allow-same-origin allow-popups"
-          style={{ display: showFallback ? 'none' : 'block' }}
-        />
-
-        {/* Fallback direct PDF iframe */}
-        {showFallback && (
+        {/* PDF.js viewer iframe - Primary method */}
+        {currentMethod === 'pdfjs' && (
           <iframe
-            key={`pdf-direct-${loadAttempts}`}
-            src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&zoom=page-fit&view=FitH`}
+            key={`pdf-viewer-${loadAttempts}`}
+            ref={iframeRef}
+            src={pdfViewerUrl}
             className="w-full h-full border-0"
-            title={`${fileName} - Direct PDF`}
-            onLoad={() => {
-              console.log('Direct PDF loaded successfully');
-              setIsLoading(false);
-            }}
-            onError={() => {
-              console.log('Direct PDF also failed to load');
-              setIsLoading(false);
-            }}
-            sandbox="allow-scripts allow-same-origin"
+            title={`${fileName} - PDF Viewer`}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+            style={{ display: showFallback ? 'none' : 'block' }}
           />
         )}
 
-        {/* Final fallback when both iframes fail */}
-        {showFallback && !isLoading && (
+        {/* Direct PDF iframe - Fallback method */}
+        {(currentMethod === 'direct' || showFallback) && (
+          <iframe
+            key={`pdf-direct-${loadAttempts}`}
+            src={directPdfUrl}
+            className="w-full h-full border-0"
+            title={`${fileName} - Direct PDF`}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            sandbox="allow-scripts allow-same-origin"
+            style={{ display: currentMethod === 'direct' ? 'block' : 'none' }}
+          />
+        )}
+
+        {/* Final fallback when both methods fail */}
+        {!isLoading && showFallback && currentMethod === 'direct' && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/95 backdrop-blur-sm z-10">
             <div className="text-center p-8 max-w-md">
               <FileText className="h-20 w-20 text-primary mx-auto mb-6" />
