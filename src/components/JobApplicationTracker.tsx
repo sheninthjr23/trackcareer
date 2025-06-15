@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Building2, MapPin, Calendar, TrendingUp, Edit2, Trash2, Clock, CheckCircle, XCircle, AlertCircle, Target, Briefcase, Users } from "lucide-react";
+import { Plus, Building2, MapPin, Calendar, TrendingUp, Edit2, Trash2, Clock, CheckCircle, XCircle, AlertCircle, Target, Briefcase, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type JobApplicationStatus = "In Progress" | "Shortlisted" | "Rejected" | "Accepted";
@@ -53,6 +52,7 @@ export function JobApplicationTracker() {
   const [selectedApplicationId, setSelectedApplicationId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [expandedUpdates, setExpandedUpdates] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   // Form states
@@ -237,6 +237,13 @@ export function JobApplicationTracker() {
         variant: "destructive",
       });
     }
+  };
+
+  const toggleUpdatesExpansion = (applicationId: string) => {
+    setExpandedUpdates(prev => ({
+      ...prev,
+      [applicationId]: !prev[applicationId]
+    }));
   };
 
   const getStatusIcon = (status: JobApplicationStatus) => {
@@ -610,123 +617,154 @@ export function JobApplicationTracker() {
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {getFilteredApplications().map((application) => (
-                <Card key={application.id} className="card-hover elegant-card group">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-white truncate flex items-center gap-2">
-                          <Building2 className="h-5 w-5 text-muted-foreground" />
-                          {application.company_name}
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground flex items-center gap-1 mt-1">
-                          <Users className="h-4 w-4" />
-                          {application.role}
-                        </CardDescription>
-                      </div>
-                      <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingApplication(application);
-                            setFormData({
-                              company_name: application.company_name,
-                              role: application.role,
-                              location: application.location || '',
-                              date_applied: application.date_applied,
-                              status: application.status,
-                              ctc: application.ctc || '',
-                              total_rounds: application.total_rounds?.toString() || '',
-                              initial_notes: application.initial_notes || ''
-                            });
-                            setIsAddDialogOpen(true);
-                          }}
-                          className="h-8 w-8 p-0 hover:bg-white/10"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteApplication(application.id)}
-                          className="h-8 w-8 p-0 hover:bg-red-500/20 text-red-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{application.location || 'Location not specified'}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>Applied: {new Date(application.date_applied).toLocaleDateString('en-IN', {
-                        timeZone: 'Asia/Kolkata'
-                      })}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Badge className={`${getStatusColor(application.status)} flex items-center gap-1`}>
-                        {getStatusIcon(application.status)}
-                        {application.status}
-                      </Badge>
-                      {application.ctc && (
-                        <span className="text-sm font-medium text-green-400">{application.ctc}</span>
-                      )}
-                    </div>
-
-                    {application.total_rounds && (
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">Interview Progress</span>
-                          <span className="text-white font-medium">
-                            {application.rounds_passed}/{application.total_rounds}
-                          </span>
+              {getFilteredApplications().map((application) => {
+                const applicationUpdates = getApplicationUpdates(application.id);
+                const isExpanded = expandedUpdates[application.id];
+                
+                return (
+                  <Card key={application.id} className="card-hover elegant-card group">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-white truncate flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-muted-foreground" />
+                            {application.company_name}
+                          </CardTitle>
+                          <CardDescription className="text-muted-foreground flex items-center gap-1 mt-1">
+                            <Users className="h-4 w-4" />
+                            {application.role}
+                          </CardDescription>
                         </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
-                            style={{ 
-                              width: `${(application.rounds_passed / application.total_rounds) * 100}%` 
+                        <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingApplication(application);
+                              setFormData({
+                                company_name: application.company_name,
+                                role: application.role,
+                                location: application.location || '',
+                                date_applied: application.date_applied,
+                                status: application.status,
+                                ctc: application.ctc || '',
+                                total_rounds: application.total_rounds?.toString() || '',
+                                initial_notes: application.initial_notes || ''
+                              });
+                              setIsAddDialogOpen(true);
                             }}
-                          />
+                            className="h-8 w-8 p-0 hover:bg-white/10"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteApplication(application.id)}
+                            className="h-8 w-8 p-0 hover:bg-red-500/20 text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                    )}
-
-                    {application.next_round_date && (
-                      <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 rounded-lg p-2">
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{application.location || 'Location not specified'}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        <span>Next Round: {new Date(application.next_round_date).toLocaleDateString('en-IN', {
+                        <span>Applied: {new Date(application.date_applied).toLocaleDateString('en-IN', {
                           timeZone: 'Asia/Kolkata'
                         })}</span>
                       </div>
-                    )}
 
-                    {getApplicationUpdates(application.id).length > 0 && (
-                      <div className="border-t border-white/10 pt-3">
-                        <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4" />
-                          Recent Updates
-                        </h4>
-                        <div className="space-y-2 max-h-20 overflow-y-auto">
-                          {getApplicationUpdates(application.id).slice(0, 2).map((update) => (
-                            <div key={update.id} className="text-xs text-muted-foreground bg-white/5 rounded p-2">
-                              <span className="font-medium text-white">{update.update_type}</span>: {update.details}
-                            </div>
-                          ))}
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <Badge className={`${getStatusColor(application.status)} flex items-center gap-1`}>
+                          {getStatusIcon(application.status)}
+                          {application.status}
+                        </Badge>
+                        {application.ctc && (
+                          <span className="text-sm font-medium text-green-400">{application.ctc}</span>
+                        )}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+
+                      {application.total_rounds && (
+                        <div className="bg-white/5 rounded-lg p-3">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-muted-foreground">Interview Progress</span>
+                            <span className="text-white font-medium">
+                              {application.rounds_passed}/{application.total_rounds}
+                            </span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${(application.rounds_passed / application.total_rounds) * 100}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {application.next_round_date && (
+                        <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 rounded-lg p-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>Next Round: {new Date(application.next_round_date).toLocaleDateString('en-IN', {
+                            timeZone: 'Asia/Kolkata'
+                          })}</span>
+                        </div>
+                      )}
+
+                      {applicationUpdates.length > 0 && (
+                        <div className="border-t border-white/10 pt-3">
+                          <button
+                            onClick={() => toggleUpdatesExpansion(application.id)}
+                            className="w-full flex items-center justify-between text-sm font-medium text-white mb-2 hover:text-blue-400 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4" />
+                              Recent Updates
+                            </div>
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 transition-transform" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 transition-transform" />
+                            )}
+                          </button>
+                          
+                          <div className={`space-y-2 overflow-hidden transition-all duration-300 ${
+                            isExpanded ? 'max-h-96 opacity-100' : 'max-h-12 opacity-75'
+                          }`}>
+                            {applicationUpdates.slice(0, isExpanded ? undefined : 1).map((update) => (
+                              <div key={update.id} className="text-xs text-muted-foreground bg-white/5 rounded p-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-medium text-white">{update.update_type}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(update.created_at).toLocaleDateString('en-IN', {
+                                      timeZone: 'Asia/Kolkata'
+                                    })}
+                                  </span>
+                                </div>
+                                <p>{update.details}</p>
+                              </div>
+                            ))}
+                            {!isExpanded && applicationUpdates.length > 1 && (
+                              <div className="text-xs text-blue-400 text-center">
+                                +{applicationUpdates.length - 1} more updates
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
