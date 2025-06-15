@@ -313,29 +313,71 @@ export function DoubtManager() {
     }
 
     let html = content
-      // Headers
+      // Headers (must be processed first)
       .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-white mb-2 mt-4">$1</h3>')
       .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold text-white mb-3 mt-4">$1</h2>')
       .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold text-white mb-4 mt-4">$1</h1>')
-      // Bold and italic
+      
+      // Code blocks (must be before inline code)
+      .replace(/```([a-zA-Z]*)\n([\s\S]*?)```/gim, '<pre class="bg-gray-800 p-3 rounded-md my-3 overflow-x-auto border border-gray-700"><code class="text-green-400 text-sm language-$1">$2</code></pre>')
+      
+      // Inline code
+      .replace(/`([^`]+)`/gim, '<code class="bg-gray-800 px-2 py-1 rounded text-green-400 text-sm font-mono">$1</code>')
+      
+      // Todo lists (must be before regular lists)
+      .replace(/^(\s*)-\s*\[\s*\]\s*(.*)$/gim, '<div class="flex items-start gap-2 mb-1 ml-4"><input type="checkbox" class="mt-1 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900" disabled> <span class="text-gray-300">$2</span></div>')
+      .replace(/^(\s*)-\s*\[x\]\s*(.*)$/gim, '<div class="flex items-start gap-2 mb-1 ml-4"><input type="checkbox" checked class="mt-1 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900" disabled> <span class="text-gray-300 line-through opacity-60">$2</span></div>')
+      
+      // Numbered todo lists
+      .replace(/^(\s*)\d+\.\s*\[\s*\]\s*(.*)$/gim, '<div class="flex items-start gap-2 mb-1 ml-4"><input type="checkbox" class="mt-1 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900" disabled> <span class="text-gray-300">$2</span></div>')
+      .replace(/^(\s*)\d+\.\s*\[x\]\s*(.*)$/gim, '<div class="flex items-start gap-2 mb-1 ml-4"><input type="checkbox" checked class="mt-1 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-gray-900" disabled> <span class="text-gray-300 line-through opacity-60">$2</span></div>')
+      
+      // Bold and italic (must be before other formatting)
+      .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong class="font-bold text-white"><em class="italic">$1</em></strong>')
       .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold text-white">$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em class="italic text-gray-300">$1</em>')
-      // Code blocks
-      .replace(/```(.*?)```/gims, '<pre class="bg-gray-800 p-3 rounded-md my-3 overflow-x-auto"><code class="text-green-400 text-sm">$1</code></pre>')
-      // Inline code
-      .replace(/`(.*?)`/gim, '<code class="bg-gray-800 px-2 py-1 rounded text-green-400 text-sm">$1</code>')
+      
+      // Strikethrough
+      .replace(/~~(.*?)~~/gim, '<del class="line-through text-gray-400">$1</del>')
+      
       // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">$1</a>')
-      // Lists (unordered)
-      .replace(/^\s*[-*+]\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1">• $1</li>')
-      // Lists (ordered)
-      .replace(/^\s*\d+\.\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1 list-decimal">$1</li>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">$1</a>')
+      
+      // Images
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, '<img src="$2" alt="$1" class="max-w-full h-auto rounded-md border border-gray-700 my-2">')
+      
+      // Blockquotes
+      .replace(/^>\s*(.*)$/gim, '<blockquote class="border-l-4 border-blue-500 pl-4 py-2 my-3 bg-blue-500/10 text-gray-300 italic">$1</blockquote>')
+      
+      // Horizontal rules
+      .replace(/^---$/gim, '<hr class="border-gray-600 my-4">')
+      .replace(/^\*\*\*$/gim, '<hr class="border-gray-600 my-4">')
+      
+      // Unordered lists (bullets)
+      .replace(/^(\s*)-\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1 flex items-start"><span class="text-blue-400 mr-2 mt-1">•</span><span>$2</span></li>')
+      .replace(/^(\s*)\*\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1 flex items-start"><span class="text-blue-400 mr-2 mt-1">•</span><span>$2</span></li>')
+      .replace(/^(\s*)\+\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1 flex items-start"><span class="text-blue-400 mr-2 mt-1">•</span><span>$2</span></li>')
+      
+      // Ordered lists (numbers)
+      .replace(/^(\s*)\d+\.\s+(.*)$/gim, '<li class="text-gray-300 ml-4 mb-1 list-decimal list-inside">$2</li>')
+      
+      // Tables
+      .replace(/\|(.+)\|/gim, (match, content) => {
+        const cells = content.split('|').map((cell: string) => cell.trim()).filter((cell: string) => cell);
+        const isHeader = content.includes('---');
+        if (isHeader) return ''; // Skip separator rows
+        const cellTag = cells.some((cell: string) => cell.includes('---')) ? 'th' : 'td';
+        const cellClass = cellTag === 'th' ? 'font-semibold text-white bg-gray-800' : 'text-gray-300';
+        return `<tr class="border-b border-gray-700">${cells.map((cell: string) => `<${cellTag} class="px-4 py-2 text-left ${cellClass}">${cell}</${cellTag}>`).join('')}</tr>`;
+      })
+      .replace(/(<tr.*<\/tr>)/gim, '<table class="w-full border-collapse border border-gray-700 my-3 rounded-md overflow-hidden">$1</table>')
+      
       // Line breaks and paragraphs
-      .replace(/\n\n/gim, '</p><p class="text-gray-300 mb-3">')
+      .replace(/\n\n+/gim, '</p><p class="text-gray-300 mb-3">')
       .replace(/\n/gim, '<br>');
 
-    // Wrap in paragraph tags if not already wrapped
-    if (!html.startsWith('<h') && !html.startsWith('<p') && !html.startsWith('<pre') && !html.startsWith('<li')) {
+    // Wrap in paragraph tags if not already wrapped in block elements
+    if (!html.match(/^<(h[1-6]|p|div|pre|blockquote|ul|ol|li|table|tr)/)) {
       html = `<p class="text-gray-300 mb-3">${html}</p>`;
     }
 
@@ -577,7 +619,7 @@ export function DoubtManager() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Markdown Editor Modal */}
+      {/* Enhanced Markdown Editor Modal */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card">
           <DialogHeader>
@@ -600,33 +642,14 @@ export function DoubtManager() {
               <Textarea
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
-                placeholder="Write your notes in markdown...
-
-Examples:
-# Heading 1
-## Heading 2
-### Heading 3
-
-**Bold text**
-*Italic text*
-
-`inline code`
-
-```
-code block
-```
-
-- Bullet list
-1. Numbered list
-
-[Link text](https://example.com)"
+                placeholder="Write your notes in markdown format..."
                 className="flex-1 resize-none input-elegant font-mono text-sm"
               />
             </div>
             <div className="flex flex-col">
-              <Label className="text-white mb-2">Preview</Label>
+              <Label className="text-white mb-2">Live Preview</Label>
               <div 
-                className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto"
+                className="flex-1 p-4 bg-background/50 border border-white/20 rounded-md overflow-auto prose prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(markdownContent) }}
               />
             </div>
