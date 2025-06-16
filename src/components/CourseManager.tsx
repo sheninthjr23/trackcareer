@@ -58,6 +58,7 @@ export function CourseManager() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(true);
   const [newFolderName, setNewFolderName] = useState('');
   const [editFolderName, setEditFolderName] = useState('');
   const [newElement, setNewElement] = useState({
@@ -383,7 +384,10 @@ export function CourseManager() {
 
   const getEmbedUrl = (driveUrl: string) => {
     const videoId = extractGoogleDriveVideoId(driveUrl);
-    return videoId ? `https://drive.google.com/file/d/${videoId}/preview` : null;
+    if (!videoId) return null;
+    
+    // Enhanced URL with better quality and performance parameters
+    return `https://drive.google.com/file/d/${videoId}/preview?usp=sharing&autoplay=0&quality=hd1080&modestbranding=1&rel=0&showinfo=0`;
   };
 
   const openEditDialog = (element: CourseElement) => {
@@ -526,6 +530,7 @@ export function CourseManager() {
 
   const openVideoInModal = (element: CourseElement) => {
     setSelectedElement(element);
+    setVideoLoading(true);
     setIsViewerOpen(true);
   };
 
@@ -533,6 +538,19 @@ export function CourseManager() {
     if (element.google_drive_link) {
       openVideoInPiP(element.google_drive_link, element.title);
     }
+  };
+
+  const handleVideoLoad = () => {
+    setVideoLoading(false);
+  };
+
+  const handleVideoError = () => {
+    setVideoLoading(false);
+    toast({
+      title: "Video Error",
+      description: "Failed to load video. Please check the Google Drive link.",
+      variant: "destructive",
+    });
   };
 
   const selectedFolderData = getAllFoldersForDisplay().find(f => f.id === selectedFolder);
@@ -806,25 +824,41 @@ export function CourseManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Video Viewer Modal */}
+      {/* Enhanced Video Viewer Modal */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card">
           <DialogHeader>
             <DialogTitle className="text-white">{selectedElement?.title}</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden rounded-lg">
+          <div className="flex-1 overflow-hidden rounded-lg relative">
+            {videoLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-lg z-10">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                  <p className="text-white">Loading video...</p>
+                </div>
+              </div>
+            )}
+            
             {selectedElement?.google_drive_link && getEmbedUrl(selectedElement.google_drive_link) ? (
               <iframe
                 src={getEmbedUrl(selectedElement.google_drive_link)!}
                 className="w-full h-full border-0 rounded-lg"
                 title={selectedElement.title}
                 allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 style={{ aspectRatio: '16/9' }}
+                onLoad={handleVideoLoad}
+                onError={handleVideoError}
+                loading="lazy"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground bg-gray-900 rounded-lg">
-                No valid video link available
+                <div className="text-center">
+                  <p className="text-red-400 mb-2">❌ No valid video link available</p>
+                  <p className="text-sm text-gray-400">Please check the Google Drive link and ensure it's publicly accessible</p>
+                </div>
               </div>
             )}
           </div>
