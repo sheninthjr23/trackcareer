@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePiPIntegration } from '@/hooks/usePiPIntegration';
 import { FolderShareManager } from './FolderShareManager';
+import { OptimizedVideoPlayer } from './OptimizedVideoPlayer';
 
 interface CourseFolder {
   id: string;
@@ -540,15 +541,11 @@ export function CourseManager() {
     }
   };
 
-  const handleVideoLoad = () => {
-    setVideoLoading(false);
-  };
-
   const handleVideoError = () => {
     setVideoLoading(false);
     toast({
       title: "Video Error",
-      description: "Failed to load video. Please check the Google Drive link.",
+      description: "Failed to load video. Please check the Google Drive link and ensure it's publicly accessible.",
       variant: "destructive",
     });
   };
@@ -824,40 +821,26 @@ export function CourseManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Enhanced Video Viewer Modal */}
+      {/* Enhanced Video Viewer Modal with Optimized Player */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card">
           <DialogHeader>
             <DialogTitle className="text-white">{selectedElement?.title}</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden rounded-lg relative">
-            {videoLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-lg z-10">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                  <p className="text-white">Loading video...</p>
-                </div>
-              </div>
-            )}
-            
-            {selectedElement?.google_drive_link && getEmbedUrl(selectedElement.google_drive_link) ? (
-              <iframe
-                src={getEmbedUrl(selectedElement.google_drive_link)!}
-                className="w-full h-full border-0 rounded-lg"
+          <div className="flex-1 overflow-hidden rounded-lg">
+            {selectedElement?.google_drive_link ? (
+              <OptimizedVideoPlayer
+                videoUrl={selectedElement.google_drive_link}
                 title={selectedElement.title}
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                style={{ aspectRatio: '16/9' }}
-                onLoad={handleVideoLoad}
                 onError={handleVideoError}
-                loading="lazy"
+                className="w-full h-full"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground bg-gray-900 rounded-lg">
                 <div className="text-center">
-                  <p className="text-red-400 mb-2">❌ No valid video link available</p>
-                  <p className="text-sm text-gray-400">Please check the Google Drive link and ensure it's publicly accessible</p>
+                  <p className="text-red-400 mb-2">❌ No video link available</p>
+                  <p className="text-sm text-gray-400">Please add a Google Drive video link to this course element</p>
                 </div>
               </div>
             )}

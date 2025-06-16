@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Maximize2, Minimize2, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePiPVideo } from '@/contexts/PiPVideoContext';
+import { OptimizedVideoPlayer } from './OptimizedVideoPlayer';
 
 export function PiPVideoPlayer() {
   const { pipState, closePiP, updatePosition, updateSize } = usePiPVideo();
@@ -10,21 +10,7 @@ export function PiPVideoPlayer() {
   const [isResizing, setIsResizing] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const playerRef = useRef<HTMLDivElement>(null);
-
-  const extractGoogleDriveVideoId = (url: string) => {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return match ? match[1] : null;
-  };
-
-  const getEmbedUrl = (driveUrl: string) => {
-    const videoId = extractGoogleDriveVideoId(driveUrl);
-    if (!videoId) return null;
-    
-    // Enhanced URL with better quality parameters
-    return `https://drive.google.com/file/d/${videoId}/preview?usp=sharing&autoplay=1&quality=hd1080`;
-  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -71,20 +57,9 @@ export function PiPVideoPlayer() {
     setIsMinimized(!isMinimized);
   };
 
-  const handleIframeLoad = () => {
-    setIsLoading(false);
-  };
-
-  const handleIframeError = () => {
-    setIsLoading(false);
-    console.error('Failed to load video in PiP mode');
-  };
-
   if (!pipState.isOpen || !pipState.videoUrl) {
     return null;
   }
-
-  const embedUrl = getEmbedUrl(pipState.videoUrl);
 
   return (
     <div
@@ -132,38 +107,12 @@ export function PiPVideoPlayer() {
       {/* Video Content */}
       {!isMinimized && (
         <div className="relative">
-          {isLoading && (
-            <div 
-              className="absolute inset-0 flex items-center justify-center bg-gray-800 z-10"
-              style={{ height: pipState.size.height }}
-            >
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-            </div>
-          )}
-          
-          {embedUrl ? (
-            <iframe
-              src={embedUrl}
-              className="w-full h-full border-0"
-              title={pipState.videoTitle}
-              allowFullScreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              style={{ height: pipState.size.height }}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              loading="lazy"
-            />
-          ) : (
-            <div 
-              className="flex items-center justify-center text-white bg-gray-800"
-              style={{ height: pipState.size.height }}
-            >
-              <div className="text-center">
-                <p className="text-red-400 mb-2">❌ Invalid video link</p>
-                <p className="text-sm text-gray-400">Please check the Google Drive link</p>
-              </div>
-            </div>
-          )}
+          <OptimizedVideoPlayer
+            videoUrl={pipState.videoUrl}
+            title={pipState.videoTitle}
+            className="w-full"
+            style={{ height: pipState.size.height }}
+          />
           
           {/* Resize Handle */}
           <div
