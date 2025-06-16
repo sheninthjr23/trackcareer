@@ -9,13 +9,15 @@ interface OptimizedVideoPlayerProps {
   title: string;
   onError?: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export function OptimizedVideoPlayer({ 
   videoUrl, 
   title, 
   onError,
-  className = ""
+  className = "",
+  style
 }: OptimizedVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -166,7 +168,7 @@ export function OptimizedVideoPlayer({
 
   if (!streamingUrl) {
     return (
-      <div className={`flex items-center justify-center bg-gray-900 text-white ${className}`}>
+      <div className={`flex items-center justify-center bg-gray-900 text-white ${className}`} style={style}>
         <div className="text-center">
           <p className="text-red-400 mb-2">❌ Invalid video link</p>
           <p className="text-sm text-gray-400">Please check the Google Drive link</p>
@@ -177,7 +179,7 @@ export function OptimizedVideoPlayer({
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center bg-gray-900 text-white ${className}`}>
+      <div className={`flex items-center justify-center bg-gray-900 text-white ${className}`} style={style}>
         <div className="text-center">
           <p className="text-red-400 mb-4">❌ {error}</p>
           <Button onClick={handleRetry} variant="outline" className="text-white border-white">
@@ -192,6 +194,7 @@ export function OptimizedVideoPlayer({
   return (
     <div 
       className={`relative bg-black group ${className}`}
+      style={style}
       onMouseMove={() => setShowControls(true)}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
