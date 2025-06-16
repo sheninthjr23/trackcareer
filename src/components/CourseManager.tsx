@@ -59,8 +59,6 @@ export function CourseManager() {
   const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(true);
-  const [bufferingIssues, setBufferingIssues] = useState(0);
-  const [videoQuality, setVideoQuality] = useState<'hd720' | 'hd1080' | 'medium'>('hd720');
   const [newFolderName, setNewFolderName] = useState('');
   const [editFolderName, setEditFolderName] = useState('');
   const [newElement, setNewElement] = useState({
@@ -384,33 +382,12 @@ export function CourseManager() {
     return match ? match[1] : null;
   };
 
-  const getOptimizedEmbedUrl = (driveUrl: string, quality: string = videoQuality) => {
+  const getEmbedUrl = (driveUrl: string) => {
     const videoId = extractGoogleDriveVideoId(driveUrl);
     if (!videoId) return null;
     
-    // Optimized parameters for better streaming
-    const params = new URLSearchParams({
-      usp: 'sharing',
-      autoplay: '0',
-      quality: quality,
-      modestbranding: '1',
-      rel: '0',
-      showinfo: '0',
-      controls: '1',
-      enablejsapi: '1',
-      origin: window.location.origin,
-      playsinline: '1',
-      start: '0',
-      fs: '1',
-      cc_load_policy: '0',
-      iv_load_policy: '3',
-      loop: '0',
-      // Additional buffering optimization
-      html5: '1',
-      disablekb: '0'
-    });
-    
-    return `https://drive.google.com/file/d/${videoId}/preview?${params.toString()}`;
+    // Enhanced URL with better quality and performance parameters
+    return `https://drive.google.com/file/d/${videoId}/preview?usp=sharing&autoplay=0&quality=hd1080&modestbranding=1&rel=0&showinfo=0`;
   };
 
   const openEditDialog = (element: CourseElement) => {
@@ -554,7 +531,6 @@ export function CourseManager() {
   const openVideoInModal = (element: CourseElement) => {
     setSelectedElement(element);
     setVideoLoading(true);
-    setBufferingIssues(0);
     setIsViewerOpen(true);
   };
 
@@ -565,29 +541,16 @@ export function CourseManager() {
   };
 
   const handleVideoLoad = () => {
-    console.log('Full-screen video loaded successfully');
     setVideoLoading(false);
-    setBufferingIssues(0);
   };
 
   const handleVideoError = () => {
-    console.error('Full-screen video failed to load');
     setVideoLoading(false);
-    setBufferingIssues(prev => prev + 1);
-    
-    if (bufferingIssues >= 2 && videoQuality !== 'medium') {
-      setVideoQuality('medium');
-      toast({
-        title: "Video Quality Adjusted",
-        description: "Switched to lower quality for better streaming performance.",
-      });
-    } else {
-      toast({
-        title: "Video Error",
-        description: "Failed to load video. Please check the Google Drive link.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Video Error",
+      description: "Failed to load video. Please check the Google Drive link.",
+      variant: "destructive",
+    });
   };
 
   const selectedFolderData = getAllFoldersForDisplay().find(f => f.id === selectedFolder);
@@ -861,29 +824,11 @@ export function CourseManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Enhanced Video Viewer Modal with Buffering Optimization */}
+      {/* Enhanced Video Viewer Modal */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center justify-between">
-              <span>{selectedElement?.title}</span>
-              {bufferingIssues > 0 && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={videoQuality}
-                    onChange={(e) => setVideoQuality(e.target.value as 'hd720' | 'hd1080' | 'medium')}
-                    className="bg-gray-700 text-white text-sm rounded px-2 py-1 border border-gray-600"
-                  >
-                    <option value="medium">Medium Quality (Better Streaming)</option>
-                    <option value="hd720">HD 720p</option>
-                    <option value="hd1080">HD 1080p</option>
-                  </select>
-                  {bufferingIssues > 2 && (
-                    <span className="text-yellow-400 text-xs">Auto-adjusted quality</span>
-                  )}
-                </div>
-              )}
-            </DialogTitle>
+            <DialogTitle className="text-white">{selectedElement?.title}</DialogTitle>
           </DialogHeader>
           
           <div className="flex-1 overflow-hidden rounded-lg relative">
@@ -891,26 +836,22 @@ export function CourseManager() {
               <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-lg z-10">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                  <p className="text-white mb-2">Optimizing video stream...</p>
-                  <p className="text-gray-400 text-sm">Quality: {videoQuality}</p>
+                  <p className="text-white">Loading video...</p>
                 </div>
               </div>
             )}
             
-            {selectedElement?.google_drive_link && getOptimizedEmbedUrl(selectedElement.google_drive_link) ? (
+            {selectedElement?.google_drive_link && getEmbedUrl(selectedElement.google_drive_link) ? (
               <iframe
-                key={`${selectedElement.id}-${videoQuality}`} // Force reload on quality change
-                src={getOptimizedEmbedUrl(selectedElement.google_drive_link)!}
+                src={getEmbedUrl(selectedElement.google_drive_link)!}
                 className="w-full h-full border-0 rounded-lg"
                 title={selectedElement.title}
                 allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 style={{ aspectRatio: '16/9' }}
                 onLoad={handleVideoLoad}
                 onError={handleVideoError}
-                loading="eager"
-                importance="high"
+                loading="lazy"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground bg-gray-900 rounded-lg">

@@ -11,55 +11,20 @@ export function PiPVideoPlayer() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [bufferingCount, setBufferingCount] = useState(0);
   const playerRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const extractGoogleDriveVideoId = (url: string) => {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     return match ? match[1] : null;
   };
 
-  const getOptimizedEmbedUrl = (driveUrl: string) => {
+  const getEmbedUrl = (driveUrl: string) => {
     const videoId = extractGoogleDriveVideoId(driveUrl);
     if (!videoId) return null;
     
-    // Optimized URL with better streaming parameters
-    const params = new URLSearchParams({
-      usp: 'sharing',
-      autoplay: '0', // Start paused to allow preloading
-      quality: 'hd720', // Balanced quality for better streaming
-      modestbranding: '1',
-      rel: '0',
-      showinfo: '0',
-      controls: '1',
-      enablejsapi: '1',
-      origin: window.location.origin,
-      playsinline: '1',
-      // Additional streaming optimization parameters
-      start: '0',
-      fs: '1',
-      cc_load_policy: '0',
-      iv_load_policy: '3',
-      loop: '0'
-    });
-    
-    return `https://drive.google.com/file/d/${videoId}/preview?${params.toString()}`;
+    // Enhanced URL with better quality parameters
+    return `https://drive.google.com/file/d/${videoId}/preview?usp=sharing&autoplay=1&quality=hd1080`;
   };
-
-  // Preload iframe content
-  useEffect(() => {
-    if (pipState.videoUrl && pipState.isOpen) {
-      const link = document.createElement('link');
-      link.rel = 'prefetch';
-      link.href = getOptimizedEmbedUrl(pipState.videoUrl) || '';
-      document.head.appendChild(link);
-      
-      return () => {
-        document.head.removeChild(link);
-      };
-    }
-  }, [pipState.videoUrl, pipState.isOpen]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -107,51 +72,19 @@ export function PiPVideoPlayer() {
   };
 
   const handleIframeLoad = () => {
-    console.log('PiP video iframe loaded successfully');
     setIsLoading(false);
-    setBufferingCount(0);
   };
 
   const handleIframeError = () => {
-    console.error('PiP video iframe failed to load');
     setIsLoading(false);
-    setBufferingCount(prev => prev + 1);
+    console.error('Failed to load video in PiP mode');
   };
-
-  // Monitor iframe for buffering issues
-  useEffect(() => {
-    if (!isLoading && iframeRef.current) {
-      const iframe = iframeRef.current;
-      let bufferingTimeout: NodeJS.Timeout;
-      
-      const checkBuffering = () => {
-        try {
-          // Reset buffering timeout
-          clearTimeout(bufferingTimeout);
-          bufferingTimeout = setTimeout(() => {
-            console.log('Potential buffering detected in PiP video');
-            setBufferingCount(prev => prev + 1);
-          }, 3000);
-        } catch (error) {
-          console.log('Cannot access iframe content due to CORS');
-        }
-      };
-
-      // Listen for iframe interactions
-      iframe.addEventListener('load', checkBuffering);
-      
-      return () => {
-        iframe.removeEventListener('load', checkBuffering);
-        clearTimeout(bufferingTimeout);
-      };
-    }
-  }, [isLoading]);
 
   if (!pipState.isOpen || !pipState.videoUrl) {
     return null;
   }
 
-  const embedUrl = getOptimizedEmbedUrl(pipState.videoUrl);
+  const embedUrl = getEmbedUrl(pipState.videoUrl);
 
   return (
     <div
@@ -175,9 +108,6 @@ export function PiPVideoPlayer() {
           <span className="text-white text-sm font-medium truncate">
             {pipState.videoTitle}
           </span>
-          {bufferingCount > 2 && (
-            <span className="text-yellow-400 text-xs ml-2">Buffering issues detected</span>
-          )}
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -207,27 +137,21 @@ export function PiPVideoPlayer() {
               className="absolute inset-0 flex items-center justify-center bg-gray-800 z-10"
               style={{ height: pipState.size.height }}
             >
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                <p className="text-white text-sm">Optimizing video stream...</p>
-              </div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
             </div>
           )}
           
           {embedUrl ? (
             <iframe
-              ref={iframeRef}
               src={embedUrl}
               className="w-full h-full border-0"
               title={pipState.videoTitle}
               allowFullScreen
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-presentation"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               style={{ height: pipState.size.height }}
               onLoad={handleIframeLoad}
               onError={handleIframeError}
-              loading="eager"
-              importance="high"
+              loading="lazy"
             />
           ) : (
             <div 
