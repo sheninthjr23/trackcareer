@@ -11,7 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePiPIntegration } from '@/hooks/usePiPIntegration';
 import { FolderShareManager } from './FolderShareManager';
-import { OptimizedVideoPlayer } from './OptimizedVideoPlayer';
 
 interface CourseFolder {
   id: string;
@@ -59,7 +58,6 @@ export function CourseManager() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isEditFolderDialogOpen, setIsEditFolderDialogOpen] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [videoLoading, setVideoLoading] = useState(true);
   const [newFolderName, setNewFolderName] = useState('');
   const [editFolderName, setEditFolderName] = useState('');
   const [newElement, setNewElement] = useState({
@@ -385,10 +383,7 @@ export function CourseManager() {
 
   const getEmbedUrl = (driveUrl: string) => {
     const videoId = extractGoogleDriveVideoId(driveUrl);
-    if (!videoId) return null;
-    
-    // Enhanced URL with better quality and performance parameters
-    return `https://drive.google.com/file/d/${videoId}/preview?usp=sharing&autoplay=0&quality=hd1080&modestbranding=1&rel=0&showinfo=0`;
+    return videoId ? `https://drive.google.com/file/d/${videoId}/preview` : null;
   };
 
   const openEditDialog = (element: CourseElement) => {
@@ -531,7 +526,6 @@ export function CourseManager() {
 
   const openVideoInModal = (element: CourseElement) => {
     setSelectedElement(element);
-    setVideoLoading(true);
     setIsViewerOpen(true);
   };
 
@@ -539,15 +533,6 @@ export function CourseManager() {
     if (element.google_drive_link) {
       openVideoInPiP(element.google_drive_link, element.title);
     }
-  };
-
-  const handleVideoError = () => {
-    setVideoLoading(false);
-    toast({
-      title: "Video Error",
-      description: "Failed to load video. Please check the Google Drive link and ensure it's publicly accessible.",
-      variant: "destructive",
-    });
   };
 
   const selectedFolderData = getAllFoldersForDisplay().find(f => f.id === selectedFolder);
@@ -821,7 +806,7 @@ export function CourseManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Enhanced Video Viewer Modal with Optimized Player */}
+      {/* Video Viewer Modal */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-6xl h-[90vh] elegant-card">
           <DialogHeader>
@@ -829,19 +814,17 @@ export function CourseManager() {
           </DialogHeader>
           
           <div className="flex-1 overflow-hidden rounded-lg">
-            {selectedElement?.google_drive_link ? (
-              <OptimizedVideoPlayer
-                videoUrl={selectedElement.google_drive_link}
+            {selectedElement?.google_drive_link && getEmbedUrl(selectedElement.google_drive_link) ? (
+              <iframe
+                src={getEmbedUrl(selectedElement.google_drive_link)!}
+                className="w-full h-full border-0 rounded-lg"
                 title={selectedElement.title}
-                onError={handleVideoError}
-                className="w-full h-full"
+                allowFullScreen
+                style={{ aspectRatio: '16/9' }}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground bg-gray-900 rounded-lg">
-                <div className="text-center">
-                  <p className="text-red-400 mb-2">❌ No video link available</p>
-                  <p className="text-sm text-gray-400">Please add a Google Drive video link to this course element</p>
-                </div>
+                No valid video link available
               </div>
             )}
           </div>

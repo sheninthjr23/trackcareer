@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Maximize2, Minimize2, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePiPVideo } from '@/contexts/PiPVideoContext';
-import { OptimizedVideoPlayer } from './OptimizedVideoPlayer';
 
 export function PiPVideoPlayer() {
   const { pipState, closePiP, updatePosition, updateSize } = usePiPVideo();
@@ -11,6 +10,16 @@ export function PiPVideoPlayer() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
+
+  const extractGoogleDriveVideoId = (url: string) => {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  };
+
+  const getEmbedUrl = (driveUrl: string) => {
+    const videoId = extractGoogleDriveVideoId(driveUrl);
+    return videoId ? `https://drive.google.com/file/d/${videoId}/preview` : null;
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -61,6 +70,8 @@ export function PiPVideoPlayer() {
     return null;
   }
 
+  const embedUrl = getEmbedUrl(pipState.videoUrl);
+
   return (
     <div
       ref={playerRef}
@@ -107,12 +118,22 @@ export function PiPVideoPlayer() {
       {/* Video Content */}
       {!isMinimized && (
         <div className="relative">
-          <OptimizedVideoPlayer
-            videoUrl={pipState.videoUrl}
-            title={pipState.videoTitle}
-            className="w-full"
-            style={{ height: pipState.size.height }}
-          />
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full border-0"
+              title={pipState.videoTitle}
+              allowFullScreen
+              style={{ height: pipState.size.height }}
+            />
+          ) : (
+            <div 
+              className="flex items-center justify-center text-white bg-gray-800"
+              style={{ height: pipState.size.height }}
+            >
+              No valid video link available
+            </div>
+          )}
           
           {/* Resize Handle */}
           <div
