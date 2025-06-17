@@ -141,7 +141,7 @@ export function Auth() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-2xl">
         {/* Header Section */}
         <div className="text-center space-y-6 mb-8">
           <div className="flex justify-center">
@@ -160,10 +160,10 @@ export function Auth() {
         </div>
 
         {/* Main Card */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm shadow-2xl w-full">
-          <CardContent className="p-8 w-full">
-            <Tabs defaultValue="signin" className="space-y-6 w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20">
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm shadow-2xl">
+          <CardContent className="p-8">
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20 mb-8">
                 <TabsTrigger 
                   value="signin" 
                   className="data-[state=active]:bg-white data-[state=active]:text-black text-white"
@@ -178,13 +178,13 @@ export function Auth() {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="signin" className="space-y-6 w-full">
-                <form onSubmit={handleSignIn} className="space-y-5 w-full">
-                  <div className="space-y-2 w-full">
+              <TabsContent value="signin" className="w-full mt-0">
+                <form onSubmit={handleSignIn} className="space-y-6 w-full">
+                  <div className="space-y-2">
                     <Label htmlFor="signin-email" className="text-white text-sm font-medium">
                       Email Address
                     </Label>
-                    <div className="relative w-full">
+                    <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
                         id="signin-email"
@@ -192,17 +192,17 @@ export function Auth() {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12 w-full"
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
                         required
                       />
                     </div>
                   </div>
                   
-                  <div className="space-y-2 w-full">
+                  <div className="space-y-2">
                     <Label htmlFor="signin-password" className="text-white text-sm font-medium">
                       Password
                     </Label>
-                    <div className="relative w-full">
+                    <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
                         id="signin-password"
@@ -210,7 +210,7 @@ export function Auth() {
                         placeholder="Enter your password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12 w-full"
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
                         required
                       />
                     </div>
@@ -226,7 +226,7 @@ export function Auth() {
                   </Button>
                 </form>
                 
-                <div className="relative">
+                <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-white/20" />
                   </div>
@@ -247,13 +247,13 @@ export function Auth() {
                 </Button>
               </TabsContent>
               
-              <TabsContent value="signup" className="space-y-6 w-full">
-                <form onSubmit={handleSignUp} className="space-y-5 w-full">
-                  <div className="space-y-2 w-full">
+              <TabsContent value="signup" className="w-full mt-0">
+                <form onSubmit={handleSignUp} className="space-y-6 w-full">
+                  <div className="space-y-2">
                     <Label htmlFor="signup-email" className="text-white text-sm font-medium">
                       Email Address
                     </Label>
-                    <div className="relative w-full">
+                    <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
                         id="signup-email"
@@ -261,17 +261,17 @@ export function Auth() {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12 w-full"
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
                         required
                       />
                     </div>
                   </div>
                   
-                  <div className="space-y-2 w-full">
+                  <div className="space-y-2">
                     <Label htmlFor="signup-password" className="text-white text-sm font-medium">
                       Password
                     </Label>
-                    <div className="relative w-full">
+                    <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
                         id="signup-password"
@@ -279,7 +279,7 @@ export function Auth() {
                         placeholder="Create a strong password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12 w-full"
+                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-white/40 focus:ring-white/20 h-12"
                         required
                       />
                     </div>
@@ -295,7 +295,7 @@ export function Auth() {
                   </Button>
                 </form>
                 
-                <div className="text-center">
+                <div className="text-center mt-6">
                   <p className="text-xs text-gray-400">
                     By creating an account, you agree to our{' '}
                     <span className="text-white underline cursor-pointer">Terms of Service</span>
