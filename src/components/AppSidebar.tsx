@@ -84,7 +84,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
             <div className="h-8 w-8 bg-gradient-to-br from-white to-gray-300 rounded-lg flex items-center justify-center">
               <Sparkles className="h-4 w-4 text-black" />
             </div>
-            <h2 className="text-xl font-bold text-gradient">Professional Hub</h2>
+            <h2 className="text-xl font-bold text-gradient">TrackCareer</h2>
           </div>
           <p className="text-sm text-muted-foreground">Elevate your career journey</p>
         </div>
