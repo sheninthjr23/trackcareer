@@ -50,8 +50,8 @@ export function MagicLinkSection({ loading, setLoading, email }: MagicLinkSectio
   };
 
   return (
-    <div className="w-full">
-      <div className="relative my-4">
+    <>
+      <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t border-white/20" />
         </div>
@@ -63,13 +63,13 @@ export function MagicLinkSection({ loading, setLoading, email }: MagicLinkSectio
       <Button 
         type="button" 
         variant="outline" 
-        className="w-full h-11 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
+        className="w-full h-12 border-white/20 text-white hover:bg-white/10 transition-all duration-200"
         onClick={handleMagicLink}
         disabled={loading}
       >
         <Mail className="h-4 w-4 mr-2" />
         Send Magic Link
       </Button>
-    </div>
+    </>
   );
 }
