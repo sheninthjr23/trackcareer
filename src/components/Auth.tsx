@@ -14,13 +14,13 @@ export function Auth() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl mx-auto">
+      <div className="w-full max-w-md mx-auto">
         <AuthHeader />
 
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm shadow-2xl w-full">
-          <CardContent className="p-8 w-full">
+          <CardContent className="p-6 w-full">
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20 mb-8">
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20 mb-6">
                 <TabsTrigger 
                   value="signin" 
                   className="data-[state=active]:bg-white data-[state=active]:text-black text-white w-full"
