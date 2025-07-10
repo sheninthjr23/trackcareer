@@ -296,6 +296,94 @@ export type Database = {
           },
         ]
       }
+      dsa_folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_folder_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsa_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "dsa_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dsa_problems: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          folder_id: string
+          github_solution_link: string | null
+          id: string
+          is_completed: boolean
+          level: string
+          problem_link: string | null
+          title: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          folder_id: string
+          github_solution_link?: string | null
+          id?: string
+          is_completed?: boolean
+          level: string
+          problem_link?: string | null
+          title: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          folder_id?: string
+          github_solution_link?: string | null
+          id?: string
+          is_completed?: boolean
+          level?: string
+          problem_link?: string | null
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dsa_problems_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "dsa_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folder_shares: {
         Row: {
           created_at: string

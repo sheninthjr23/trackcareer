@@ -8,6 +8,7 @@ import { DoubtManager } from '@/components/DoubtManager';
 import { YoutubeManager } from '@/components/YoutubeManager';
 import { ActivityTracker } from '@/components/ActivityTracker';
 import { JobApplicationTracker } from '@/components/JobApplicationTracker';
+import { DSATracker } from '@/components/DSATracker';
 import { Dashboard } from '@/components/Dashboard';
 import { Settings } from '@/components/Settings';
 import { Analytics } from '@/components/Analytics';
@@ -15,7 +16,7 @@ import { Auth } from '@/components/Auth';
 import { Header } from '@/components/Header';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
-export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'analytics' | 'settings';
+export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'dsa' | 'analytics' | 'settings';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -33,7 +34,7 @@ function AppContent() {
     return <Auth />;
   }
 
-  const handleSectionChange = (section: 'resumes' | 'courses' | 'activities' | 'jobs') => {
+  const handleSectionChange = (section: 'resumes' | 'courses' | 'activities' | 'jobs' | 'dsa') => {
     setActiveSection(section);
   };
 
@@ -53,6 +54,8 @@ function AppContent() {
         return <ActivityTracker />;
       case 'jobs':
         return <JobApplicationTracker />;
+      case 'dsa':
+        return <DSATracker />;
       case 'analytics':
         return <Analytics />;
       case 'settings':
@@ -78,6 +81,8 @@ function AppContent() {
         return 'Activity Tracking';
       case 'jobs':
         return 'Job Applications';
+      case 'dsa':
+        return 'DSA Problem Tracker';
       case 'analytics':
         return 'Analytics & Reports';
       case 'settings':
@@ -103,6 +108,8 @@ function AppContent() {
         return 'Monitor your tasks and activities';
       case 'jobs':
         return 'Keep track of your job applications and progress';
+      case 'dsa':
+        return 'Track your Data Structures & Algorithms practice journey';
       case 'analytics':
         return 'View comprehensive analytics and progress reports';
       case 'settings':
