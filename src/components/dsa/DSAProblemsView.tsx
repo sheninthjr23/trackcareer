@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +30,7 @@ import {
 import { Plus, ExternalLink, Github, Edit, Trash2, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { DSATopicSelect } from './DSATopicSelect';
 
 interface DSAProblem {
   id: string;
@@ -166,6 +166,8 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-weekly-activity'] });
       toast({ title: 'Problem status updated' });
     },
     onError: (error) => {
@@ -320,11 +322,10 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
                 
                 <div>
                   <label className="text-sm font-medium">Topic</label>
-                  <Input
+                  <DSATopicSelect
                     value={formData.topic}
-                    onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                    placeholder="Arrays, Trees, etc."
-                    required
+                    onValueChange={(value) => setFormData({ ...formData, topic: value })}
+                    placeholder="Select or type topic"
                   />
                 </div>
                 
