@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ExternalLink, Github, Calendar, Target, CheckCircle } from 'lucide-react';
+import { ExternalLink, Github, Calendar, Target, CheckCircle, RotateCcw } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, isThisWeek } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,8 +38,9 @@ export const DSALiveSection = () => {
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
 
+  // Get problems completed this week (sorted by completion time - earliest first)
   const { data: completedProblems = [], isLoading } = useQuery({
-    queryKey: ['dsa-live-problems', format(weekStart, 'yyyy-MM-dd')],
+    queryKey: ['dsa-live-completed', format(weekStart, 'yyyy-MM-dd')],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dsa_problems')
@@ -47,22 +48,23 @@ export const DSALiveSection = () => {
         .eq('is_completed', true)
         .gte('completed_at', weekStart.toISOString())
         .lte('completed_at', weekEnd.toISOString())
-        .order('completed_at', { ascending: false });
+        .order('completed_at', { ascending: true }); // Earliest first
       
       if (error) throw error;
       return data as DSAProblem[];
     },
   });
 
-  const { data: pendingProblems = [] } = useQuery({
-    queryKey: ['dsa-pending-problems'],
+  // Get problems that need revision/redo (recently completed problems that might need practice)
+  const { data: revisionProblems = [] } = useQuery({
+    queryKey: ['dsa-live-revision'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dsa_problems')
         .select('*')
         .eq('is_completed', false)
         .order('created_at', { ascending: false })
-        .limit(10); // Show recent pending problems
+        .limit(10);
       
       if (error) throw error;
       return data as DSAProblem[];
@@ -85,8 +87,8 @@ export const DSALiveSection = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
-      queryClient.invalidateQueries({ queryKey: ['dsa-pending-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-completed'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-revision'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-weekly-activity'] });
       toast({ title: 'Problem status updated' });
@@ -105,22 +107,13 @@ export const DSALiveSection = () => {
     }
   };
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Easy': return 'text-green-600';
-      case 'Medium': return 'text-yellow-600';
-      case 'Hard': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
-            Live Section - This Week's Progress
+            Live Section - This Week's Practice
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -136,47 +129,137 @@ export const DSALiveSection = () => {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            Live Section - This Week's Progress
+            Live Section - This Week's Practice
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')} • {completedProblems.length} problems completed
+            {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')} • Focus on problems to redo and revise
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Completed Problems This Week */}
+          {/* Problems for Revision/Redo */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              Completed This Week ({completedProblems.length})
+              <RotateCcw className="h-4 w-4 text-blue-600" />
+              Problems to Practice ({revisionProblems.length})
             </h3>
-            {completedProblems.length === 0 ? (
+            <p className="text-sm text-muted-foreground mb-4">
+              Focus on these problems for revision and practice this week
+            </p>
+            {revisionProblems.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No problems completed this week yet.</p>
-                <p className="text-sm">Start solving to see your progress here!</p>
+                <p>No problems pending for practice.</p>
+                <p className="text-sm">Add some problems to get started!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {completedProblems.map((problem) => (
+                {revisionProblems.map((problem) => (
                   <Card 
                     key={problem.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500"
+                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-blue-500"
                     onClick={() => setSelectedProblem(problem)}
                   >
                     <CardContent className="p-4">
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
                           <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
-                          <Checkbox
-                            checked={problem.is_completed}
-                            onCheckedChange={(checked) => {
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs shrink-0 ml-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               toggleCompletionMutation.mutate({
                                 id: problem.id,
-                                is_completed: !!checked,
+                                is_completed: true,
                               });
                             }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          >
+                            Complete
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getLevelBadgeVariant(problem.level)} className="text-xs">
+                            {problem.level}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{problem.topic}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          {problem.problem_link && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(problem.problem_link!, '_blank');
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {problem.github_solution_link && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(problem.github_solution_link!, '_blank');
+                              }}
+                            >
+                              <Github className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Completed Problems This Week */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              Completed This Week ({completedProblems.length})
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Problems you've completed this week (sorted by completion time)
+            </p>
+            {completedProblems.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No problems completed this week yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completedProblems.map((problem) => (
+                  <Card 
+                    key={problem.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500 bg-green-50/50"
+                    onClick={() => setSelectedProblem(problem)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between">
+                          <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs shrink-0 ml-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCompletionMutation.mutate({
+                                id: problem.id,
+                                is_completed: false,
+                              });
+                            }}
+                          >
+                            Redo
+                          </Button>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={getLevelBadgeVariant(problem.level)} className="text-xs">
@@ -217,52 +300,6 @@ export const DSALiveSection = () => {
                               <Github className="h-3 w-3" />
                             </Button>
                           )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Add - Recent Pending Problems */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Target className="h-4 w-4 text-blue-600" />
-              Quick Complete - Recent Problems
-            </h3>
-            {pendingProblems.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">No pending problems. Add some problems to get started!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {pendingProblems.slice(0, 6).map((problem) => (
-                  <Card key={problem.id} className="border-l-4 border-l-blue-500">
-                    <CardContent className="p-3">
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-xs"
-                            onClick={() => {
-                              toggleCompletionMutation.mutate({
-                                id: problem.id,
-                                is_completed: true,
-                              });
-                            }}
-                          >
-                            Mark Done
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getLevelBadgeVariant(problem.level)} className="text-xs">
-                            {problem.level}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{problem.topic}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -336,8 +373,8 @@ export const DSALiveSection = () => {
                   }}
                   className="flex items-center gap-2"
                 >
-                  <CheckCircle className="h-4 w-4" />
-                  {selectedProblem.is_completed ? 'Mark as Pending' : 'Mark as Completed'}
+                  {selectedProblem.is_completed ? <RotateCcw className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                  {selectedProblem.is_completed ? 'Mark for Redo' : 'Mark as Completed'}
                 </Button>
               </div>
             </div>
