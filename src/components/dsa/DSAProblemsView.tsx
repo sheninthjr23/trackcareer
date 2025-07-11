@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +32,7 @@ import { Plus, ExternalLink, Github, Edit, Trash2, Youtube } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { DSATopicSelect } from './DSATopicSelect';
+import { DSACodeSolutions } from './DSACodeSolutions';
 
 interface DSAProblem {
   id: string;
@@ -56,6 +58,7 @@ interface DSAProblemsViewProps {
 export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProblem, setEditingProblem] = useState<DSAProblem | null>(null);
+  const [expandedProblem, setExpandedProblem] = useState<string | null>(null);
   const [filterLevel, setFilterLevel] = useState<string>('all');
   const [filterTopic, setFilterTopic] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -76,7 +79,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     queryFn: async () => {
       let query = supabase
         .from('dsa_problems')
-        .select('id, title, problem_link, topic, level, github_solution_link, youtube_link, is_completed, completed_at, created_at, folder_id, code_solutions, is_live_problem, live_added_at, user_id, updated_at, live_todo_completed, live_todo_completed_at')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (folderId) {
@@ -402,107 +405,100 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
         </Dialog>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">Done</TableHead>
-              <TableHead>Problem</TableHead>
-              <TableHead>Topic</TableHead>
-              <TableHead>Level</TableHead>
-              <TableHead>Links</TableHead>
-              <TableHead>Completed</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredProblems.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  {folderId ? 'No problems in this folder yet.' : 'No problems found.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredProblems.map((problem) => (
-                <TableRow key={problem.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={problem.is_completed}
-                      onCheckedChange={(checked) =>
-                        toggleCompletionMutation.mutate({
-                          id: problem.id,
-                          is_completed: !!checked,
-                        })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {problem.title}
-                  </TableCell>
-                  <TableCell>{problem.topic}</TableCell>
-                  <TableCell>
-                    <Badge variant={getLevelBadgeVariant(problem.level)}>
-                      {problem.level}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {problem.problem_link && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={problem.problem_link} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </Button>
-                      )}
-                      {problem.github_solution_link && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={problem.github_solution_link} target="_blank" rel="noopener noreferrer">
-                            <Github className="h-3 w-3" />
-                          </a>
-                        </Button>
-                      )}
-                      {problem.youtube_link && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={problem.youtube_link} target="_blank" rel="noopener noreferrer">
-                            <Youtube className="h-3 w-3" />
-                          </a>
-                        </Button>
-                      )}
+      <div className="space-y-4">
+        {filteredProblems.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            {folderId ? 'No problems in this folder yet.' : 'No problems found.'}
+          </div>
+        ) : (
+          filteredProblems.map((problem) => (
+            <div key={problem.id} className="border rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Checkbox
+                    checked={problem.is_completed}
+                    onCheckedChange={(checked) =>
+                      toggleCompletionMutation.mutate({
+                        id: problem.id,
+                        is_completed: !!checked,
+                      })
+                    }
+                  />
+                  <div>
+                    <h3 className="font-medium">{problem.title}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={getLevelBadgeVariant(problem.level)}>
+                        {problem.level}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">{problem.topic}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {problem.completed_at ? (
-                      <span className="text-sm text-muted-foreground">
-                        {format(new Date(problem.completed_at), 'MMM dd, yyyy')}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">Not completed</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {problem.problem_link && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={problem.problem_link} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  )}
+                  {problem.github_solution_link && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={problem.github_solution_link} target="_blank" rel="noopener noreferrer">
+                        <Github className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  )}
+                  {problem.youtube_link && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={problem.youtube_link} target="_blank" rel="noopener noreferrer">
+                        <Youtube className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEdit(problem)}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteProblemMutation.mutate(problem.id)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setExpandedProblem(
+                      expandedProblem === problem.id ? null : problem.id
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEdit(problem)}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteProblemMutation.mutate(problem.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                  >
+                    {expandedProblem === problem.id ? 'Hide' : 'Show'} Solutions
+                  </Button>
+                </div>
+              </div>
+
+              {expandedProblem === problem.id && (
+                <DSACodeSolutions
+                  problemId={problem.id}
+                  codeSolutions={Array.isArray(problem.code_solutions) ? problem.code_solutions : []}
+                />
+              )}
+
+              {problem.completed_at && (
+                <div className="text-sm text-muted-foreground">
+                  Completed on {format(new Date(problem.completed_at), 'MMM dd, yyyy')}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       <div className="text-sm text-muted-foreground">

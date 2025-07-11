@@ -68,9 +68,18 @@ export const DSACodeSolutions: React.FC<DSACodeSolutionsProps> = ({
 
   const updateCodeSolutionsMutation = useMutation({
     mutationFn: async (solutions: CodeSolution[]) => {
+      // Convert to plain JSON objects for database storage
+      const solutionsForDb = solutions.map(sol => ({
+        id: sol.id,
+        language: sol.language,
+        code: sol.code,
+        notes: sol.notes || '',
+        created_at: sol.created_at
+      }));
+
       const { data, error } = await supabase
         .from('dsa_problems')
-        .update({ code_solutions: solutions })
+        .update({ code_solutions: solutionsForDb })
         .eq('id', problemId)
         .select()
         .single();
