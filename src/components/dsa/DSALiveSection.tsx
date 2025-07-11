@@ -57,7 +57,7 @@ export const DSALiveSection = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dsa_problems')
-        .select('*')
+        .select('id, title, problem_link, topic, level, github_solution_link, youtube_link, is_completed, completed_at, created_at, folder_id, code_solutions, is_live_problem, live_added_at, user_id, updated_at, live_todo_completed, live_todo_completed_at')
         .eq('is_completed', true)
         .gte('completed_at', weekStart.toISOString())
         .lte('completed_at', weekEnd.toISOString())
@@ -73,7 +73,7 @@ export const DSALiveSection = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dsa_problems')
-        .select('*')
+        .select('id, title, problem_link, topic, level, github_solution_link, youtube_link, is_completed, completed_at, created_at, folder_id, code_solutions, is_live_problem, live_added_at, user_id, updated_at, live_todo_completed, live_todo_completed_at')
         .eq('is_completed', false)
         .order('created_at', { ascending: false })
         .limit(12);

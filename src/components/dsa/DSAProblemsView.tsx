@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,7 +76,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     queryFn: async () => {
       let query = supabase
         .from('dsa_problems')
-        .select('*')
+        .select('id, title, problem_link, topic, level, github_solution_link, youtube_link, is_completed, completed_at, created_at, folder_id, code_solutions, is_live_problem, live_added_at, user_id, updated_at, live_todo_completed, live_todo_completed_at')
         .order('created_at', { ascending: false });
       
       if (folderId) {

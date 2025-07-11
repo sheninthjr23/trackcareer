@@ -333,46 +333,64 @@ export type Database = {
       }
       dsa_problems: {
         Row: {
+          code_solutions: Json | null
           completed_at: string | null
           created_at: string
           folder_id: string
           github_solution_link: string | null
           id: string
           is_completed: boolean
+          is_live_problem: boolean | null
           level: string
+          live_added_at: string | null
+          live_todo_completed: boolean | null
+          live_todo_completed_at: string | null
           problem_link: string | null
           title: string
           topic: string
           updated_at: string
           user_id: string
+          youtube_link: string | null
         }
         Insert: {
+          code_solutions?: Json | null
           completed_at?: string | null
           created_at?: string
           folder_id: string
           github_solution_link?: string | null
           id?: string
           is_completed?: boolean
+          is_live_problem?: boolean | null
           level: string
+          live_added_at?: string | null
+          live_todo_completed?: boolean | null
+          live_todo_completed_at?: string | null
           problem_link?: string | null
           title: string
           topic: string
           updated_at?: string
           user_id: string
+          youtube_link?: string | null
         }
         Update: {
+          code_solutions?: Json | null
           completed_at?: string | null
           created_at?: string
           folder_id?: string
           github_solution_link?: string | null
           id?: string
           is_completed?: boolean
+          is_live_problem?: boolean | null
           level?: string
+          live_added_at?: string | null
+          live_todo_completed?: boolean | null
+          live_todo_completed_at?: string | null
           problem_link?: string | null
           title?: string
           topic?: string
           updated_at?: string
           user_id?: string
+          youtube_link?: string | null
         }
         Relationships: [
           {
