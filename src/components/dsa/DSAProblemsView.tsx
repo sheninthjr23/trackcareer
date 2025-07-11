@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, ExternalLink, Github, Edit, Trash2, Filter } from 'lucide-react';
+import { Plus, ExternalLink, Github, Edit, Trash2, Youtube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { DSATopicSelect } from './DSATopicSelect';
@@ -39,10 +40,14 @@ interface DSAProblem {
   topic: string;
   level: 'Easy' | 'Medium' | 'Hard';
   github_solution_link: string | null;
+  youtube_link: string | null;
   is_completed: boolean;
   completed_at: string | null;
   created_at: string;
   folder_id: string;
+  code_solutions: any[];
+  is_live_problem: boolean;
+  live_added_at: string | null;
 }
 
 interface DSAProblemsViewProps {
@@ -64,6 +69,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     topic: '',
     level: 'Easy' as 'Easy' | 'Medium' | 'Hard',
     github_solution_link: '',
+    youtube_link: '',
   });
 
   const { data: problems = [], isLoading } = useQuery({
@@ -110,6 +116,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
           ...problemData,
           folder_id: folderId || editingProblem?.folder_id,
           user_id: (await supabase.auth.getUser()).data.user?.id,
+          code_solutions: [],
         })
         .select()
         .single();
@@ -119,6 +126,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
       setIsDialogOpen(false);
       resetForm();
       toast({ title: 'Problem added successfully' });
@@ -142,6 +150,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
       setIsDialogOpen(false);
       setEditingProblem(null);
       resetForm();
@@ -156,7 +165,10 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
       const { data, error } = await supabase
         .from('dsa_problems')
-        .update({ is_completed })
+        .update({ 
+          is_completed,
+          completed_at: is_completed ? new Date().toISOString() : null 
+        })
         .eq('id', id)
         .select()
         .single();
@@ -167,6 +179,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-weekly-activity'] });
       toast({ title: 'Problem status updated' });
     },
@@ -186,6 +199,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
       toast({ title: 'Problem deleted successfully' });
     },
     onError: (error) => {
@@ -200,6 +214,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
       topic: '',
       level: 'Easy',
       github_solution_link: '',
+      youtube_link: '',
     });
   };
 
@@ -220,6 +235,7 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
       topic: problem.topic,
       level: problem.level,
       github_solution_link: problem.github_solution_link || '',
+      youtube_link: problem.youtube_link || '',
     });
     setIsDialogOpen(true);
   };
@@ -362,6 +378,16 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
                     type="url"
                   />
                 </div>
+
+                <div className="col-span-2">
+                  <label className="text-sm font-medium">YouTube Video Link</label>
+                  <Input
+                    value={formData.youtube_link}
+                    onChange={(e) => setFormData({ ...formData, youtube_link: e.target.value })}
+                    placeholder="https://youtube.com/watch?v=..."
+                    type="url"
+                  />
+                </div>
               </div>
               
               <div className="flex justify-end gap-2">
@@ -433,6 +459,13 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
                         <Button size="sm" variant="outline" asChild>
                           <a href={problem.github_solution_link} target="_blank" rel="noopener noreferrer">
                             <Github className="h-3 w-3" />
+                          </a>
+                        </Button>
+                      )}
+                      {problem.youtube_link && (
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={problem.youtube_link} target="_blank" rel="noopener noreferrer">
+                            <Youtube className="h-3 w-3" />
                           </a>
                         </Button>
                       )}

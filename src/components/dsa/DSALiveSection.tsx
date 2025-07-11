@@ -11,10 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ExternalLink, Github, Calendar, Target, CheckCircle } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, isThisWeek } from 'date-fns';
+import { ExternalLink, Github, Calendar, Target, CheckCircle, Youtube, Code, Filter } from 'lucide-react';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { DSACodeSolutions } from './DSACodeSolutions';
 
 interface DSAProblem {
   id: string;
@@ -23,14 +31,20 @@ interface DSAProblem {
   topic: string;
   level: 'Easy' | 'Medium' | 'Hard';
   github_solution_link: string | null;
+  youtube_link: string | null;
   is_completed: boolean;
   completed_at: string | null;
   created_at: string;
   folder_id: string;
+  code_solutions: any[];
+  is_live_problem: boolean;
+  live_added_at: string | null;
 }
 
 export const DSALiveSection = () => {
   const [selectedProblem, setSelectedProblem] = useState<DSAProblem | null>(null);
+  const [filterLevel, setFilterLevel] = useState<string>('all');
+  const [filterTopic, setFilterTopic] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -47,22 +61,22 @@ export const DSALiveSection = () => {
         .eq('is_completed', true)
         .gte('completed_at', weekStart.toISOString())
         .lte('completed_at', weekEnd.toISOString())
-        .order('completed_at', { ascending: false });
+        .order('completed_at', { ascending: true }); // Earliest first
       
       if (error) throw error;
       return data as DSAProblem[];
     },
   });
 
-  const { data: pendingProblems = [] } = useQuery({
-    queryKey: ['dsa-pending-problems'],
+  const { data: practiceProblems = [] } = useQuery({
+    queryKey: ['dsa-practice-problems'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dsa_problems')
         .select('*')
         .eq('is_completed', false)
         .order('created_at', { ascending: false })
-        .limit(10); // Show recent pending problems
+        .limit(12);
       
       if (error) throw error;
       return data as DSAProblem[];
@@ -86,7 +100,7 @@ export const DSALiveSection = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
-      queryClient.invalidateQueries({ queryKey: ['dsa-pending-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-weekly-activity'] });
       toast({ title: 'Problem status updated' });
@@ -105,14 +119,22 @@ export const DSALiveSection = () => {
     }
   };
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Easy': return 'text-green-600';
-      case 'Medium': return 'text-yellow-600';
-      case 'Hard': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
+  // Filter problems
+  const filteredCompletedProblems = completedProblems.filter(problem => {
+    if (filterLevel !== 'all' && problem.level !== filterLevel) return false;
+    if (filterTopic !== 'all' && problem.topic !== filterTopic) return false;
+    return true;
+  });
+
+  const filteredPracticeProblems = practiceProblems.filter(problem => {
+    if (filterLevel !== 'all' && problem.level !== filterLevel) return false;
+    if (filterTopic !== 'all' && problem.topic !== filterTopic) return false;
+    return true;
+  });
+
+  // Get unique topics for filtering
+  const allProblems = [...completedProblems, ...practiceProblems];
+  const uniqueTopics = Array.from(new Set(allProblems.map(p => p.topic))).sort();
 
   if (isLoading) {
     return (
@@ -141,15 +163,46 @@ export const DSALiveSection = () => {
           <p className="text-sm text-muted-foreground">
             {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')} • {completedProblems.length} problems completed
           </p>
+          
+          {/* Filters */}
+          <div className="flex items-center gap-4 pt-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span className="text-sm font-medium">Filter:</span>
+            </div>
+            <Select value={filterLevel} onValueChange={setFilterLevel}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Levels</SelectItem>
+                <SelectItem value="Easy">Easy</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Hard">Hard</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filterTopic} onValueChange={setFilterTopic}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Topic" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Topics</SelectItem>
+                {uniqueTopics.map(topic => (
+                  <SelectItem key={topic} value={topic}>{topic}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Completed Problems This Week */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              Completed This Week ({completedProblems.length})
+              Completed This Week ({filteredCompletedProblems.length})
             </h3>
-            {completedProblems.length === 0 ? (
+            {filteredCompletedProblems.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No problems completed this week yet.</p>
@@ -157,10 +210,10 @@ export const DSALiveSection = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {completedProblems.map((problem) => (
+                {filteredCompletedProblems.map((problem) => (
                   <Card 
                     key={problem.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500"
+                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500 bg-green-50/50"
                     onClick={() => setSelectedProblem(problem)}
                   >
                     <CardContent className="p-4">
@@ -190,7 +243,7 @@ export const DSALiveSection = () => {
                             {format(new Date(problem.completed_at), 'MMM dd, HH:mm')}
                           </div>
                         )}
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           {problem.problem_link && (
                             <Button 
                               size="sm" 
@@ -217,6 +270,29 @@ export const DSALiveSection = () => {
                               <Github className="h-3 w-3" />
                             </Button>
                           )}
+                          {problem.youtube_link && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(problem.youtube_link!, '_blank');
+                              }}
+                            >
+                              <Youtube className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {problem.code_solutions && problem.code_solutions.length > 0 && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Code className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -226,20 +302,24 @@ export const DSALiveSection = () => {
             )}
           </div>
 
-          {/* Quick Add - Recent Pending Problems */}
+          {/* Problems to Practice */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Target className="h-4 w-4 text-blue-600" />
-              Quick Complete - Recent Problems
+              Problems to Practice ({filteredPracticeProblems.length})
             </h3>
-            {pendingProblems.length === 0 ? (
+            {filteredPracticeProblems.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
                 <p className="text-sm">No pending problems. Add some problems to get started!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {pendingProblems.slice(0, 6).map((problem) => (
-                  <Card key={problem.id} className="border-l-4 border-l-blue-500">
+                {filteredPracticeProblems.slice(0, 9).map((problem) => (
+                  <Card 
+                    key={problem.id} 
+                    className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => setSelectedProblem(problem)}
+                  >
                     <CardContent className="p-3">
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
@@ -248,14 +328,15 @@ export const DSALiveSection = () => {
                             size="sm"
                             variant="outline"
                             className="h-6 px-2 text-xs"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               toggleCompletionMutation.mutate({
                                 id: problem.id,
                                 is_completed: true,
                               });
                             }}
                           >
-                            Mark Done
+                            Complete
                           </Button>
                         </div>
                         <div className="flex items-center gap-2">
@@ -263,6 +344,34 @@ export const DSALiveSection = () => {
                             {problem.level}
                           </Badge>
                           <span className="text-xs text-muted-foreground">{problem.topic}</span>
+                        </div>
+                        <div className="flex gap-1 flex-wrap">
+                          {problem.problem_link && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(problem.problem_link!, '_blank');
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {problem.youtube_link && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(problem.youtube_link!, '_blank');
+                              }}
+                            >
+                              <Youtube className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -276,7 +385,7 @@ export const DSALiveSection = () => {
 
       {/* Problem Details Dialog */}
       <Dialog open={!!selectedProblem} onOpenChange={() => setSelectedProblem(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
@@ -284,7 +393,7 @@ export const DSALiveSection = () => {
             </DialogTitle>
           </DialogHeader>
           {selectedProblem && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold mb-2">{selectedProblem.title}</h3>
                 <div className="flex items-center gap-3 mb-4">
@@ -305,7 +414,7 @@ export const DSALiveSection = () => {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 {selectedProblem.problem_link && (
                   <Button 
                     onClick={() => window.open(selectedProblem.problem_link!, '_blank')}
@@ -325,6 +434,16 @@ export const DSALiveSection = () => {
                     View Solution
                   </Button>
                 )}
+                {selectedProblem.youtube_link && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => window.open(selectedProblem.youtube_link!, '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <Youtube className="h-4 w-4" />
+                    Watch Video
+                  </Button>
+                )}
                 <Button
                   variant={selectedProblem.is_completed ? "destructive" : "default"}
                   onClick={() => {
@@ -337,9 +456,15 @@ export const DSALiveSection = () => {
                   className="flex items-center gap-2"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  {selectedProblem.is_completed ? 'Mark as Pending' : 'Mark as Completed'}
+                  {selectedProblem.is_completed ? 'Redo' : 'Complete'}
                 </Button>
               </div>
+
+              {/* Code Solutions Section */}
+              <DSACodeSolutions 
+                problemId={selectedProblem.id}
+                codeSolutions={selectedProblem.code_solutions || []}
+              />
             </div>
           )}
         </DialogContent>
