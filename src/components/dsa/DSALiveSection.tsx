@@ -47,6 +47,7 @@ export const DSALiveSection = () => {
   const [selectedProblem, setSelectedProblem] = useState<DSAProblem | null>(null);
   const [filterLevel, setFilterLevel] = useState<string>('all');
   const [filterTopic, setFilterTopic] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -54,8 +55,25 @@ export const DSALiveSection = () => {
   const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
 
-  const { data: completedProblems = [], isLoading } = useQuery({
-    queryKey: ['dsa-live-problems', format(weekStart, 'yyyy-MM-dd')],
+  // Query for live completed todos
+  const { data: liveCompletedTodos = [], isLoading } = useQuery({
+    queryKey: ['dsa-live-completed-todos', sortOrder],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dsa_problems')
+        .select('id, title, problem_link, topic, level, github_solution_link, youtube_link, is_completed, completed_at, created_at, folder_id, code_solutions, is_live_problem, live_added_at, user_id, updated_at, live_todo_completed, live_todo_completed_at')
+        .eq('live_todo_completed', true)
+        .not('live_todo_completed_at', 'is', null)
+        .order('live_todo_completed_at', { ascending: sortOrder === 'asc' });
+      
+      if (error) throw error;
+      return data as DSAProblem[];
+    },
+  });
+
+  // Query for live uncompleted todos (problems that were completed this week but not yet done in live section)
+  const { data: liveUncompletedTodos = [] } = useQuery({
+    queryKey: ['dsa-live-uncompleted-todos'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dsa_problems')
@@ -63,22 +81,8 @@ export const DSALiveSection = () => {
         .eq('is_completed', true)
         .gte('completed_at', weekStart.toISOString())
         .lte('completed_at', weekEnd.toISOString())
-        .order('completed_at', { ascending: true }); // Earliest first
-      
-      if (error) throw error;
-      return data as DSAProblem[];
-    },
-  });
-
-  const { data: practiceProblems = [] } = useQuery({
-    queryKey: ['dsa-practice-problems'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('dsa_problems')
-        .select('id, title, problem_link, topic, level, github_solution_link, youtube_link, is_completed, completed_at, created_at, folder_id, code_solutions, is_live_problem, live_added_at, user_id, updated_at, live_todo_completed, live_todo_completed_at')
-        .eq('is_completed', false)
-        .order('created_at', { ascending: false })
-        .limit(12);
+        .or('live_todo_completed.is.null,live_todo_completed.eq.false')
+        .order('completed_at', { ascending: false });
       
       if (error) throw error;
       return data as DSAProblem[];
@@ -101,8 +105,8 @@ export const DSALiveSection = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
-      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-completed-todos'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-uncompleted-todos'] });
       toast({ title: 'Live todo updated' });
     },
     onError: (error) => {
@@ -126,8 +130,8 @@ export const DSALiveSection = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
-      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-completed-todos'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-uncompleted-todos'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
       queryClient.invalidateQueries({ queryKey: ['dsa-weekly-activity'] });
       toast({ title: 'Problem status updated' });
@@ -147,20 +151,20 @@ export const DSALiveSection = () => {
   };
 
   // Filter problems
-  const filteredCompletedProblems = completedProblems.filter(problem => {
+  const filteredLiveCompletedTodos = liveCompletedTodos.filter(problem => {
     if (filterLevel !== 'all' && problem.level !== filterLevel) return false;
     if (filterTopic !== 'all' && problem.topic !== filterTopic) return false;
     return true;
   });
 
-  const filteredPracticeProblems = practiceProblems.filter(problem => {
+  const filteredLiveUncompletedTodos = liveUncompletedTodos.filter(problem => {
     if (filterLevel !== 'all' && problem.level !== filterLevel) return false;
     if (filterTopic !== 'all' && problem.topic !== filterTopic) return false;
     return true;
   });
 
   // Get unique topics for filtering
-  const allProblems = [...completedProblems, ...practiceProblems];
+  const allProblems = [...liveCompletedTodos, ...liveUncompletedTodos];
   const uniqueTopics = Array.from(new Set(allProblems.map(p => p.topic))).sort();
 
   if (isLoading) {
@@ -188,7 +192,8 @@ export const DSALiveSection = () => {
             Live Section - This Week's Progress
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')} • {completedProblems.length} problems completed
+            {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')} • 
+            {filteredLiveCompletedTodos.length} live todos completed, {filteredLiveUncompletedTodos.length} pending
           </p>
           
           {/* Filters */}
@@ -220,27 +225,37 @@ export const DSALiveSection = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={sortOrder} onValueChange={(value: 'asc' | 'desc') => setSortOrder(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort Order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Latest First</SelectItem>
+                <SelectItem value="asc">Earliest First</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Completed Problems This Week */}
+          {/* Live Completed Todos */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-primary" />
-              Completed This Week ({filteredCompletedProblems.length})
+              Live Todos Completed ({filteredLiveCompletedTodos.length})
             </h3>
-            {filteredCompletedProblems.length === 0 ? (
+            {filteredLiveCompletedTodos.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No problems completed this week yet.</p>
-                <p className="text-sm">Start solving to see your progress here!</p>
+                <p>No live todos completed yet.</p>
+                <p className="text-sm">Complete some problems below to see them here!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredCompletedProblems.map((problem) => (
+                {filteredLiveCompletedTodos.map((problem) => (
                   <Card 
                     key={problem.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary"
+                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary bg-primary/5"
                     onClick={() => setSelectedProblem(problem)}
                   >
                     <CardContent className="p-4">
@@ -248,12 +263,14 @@ export const DSALiveSection = () => {
                         <div className="flex items-start justify-between">
                           <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
                           <Checkbox
-                            checked={problem.live_todo_completed || false}
+                            checked={true}
                             onCheckedChange={(checked) => {
-                              toggleLiveTodoMutation.mutate({
-                                id: problem.id,
-                                live_todo_completed: !!checked,
-                              });
+                              if (!checked) {
+                                toggleLiveTodoMutation.mutate({
+                                  id: problem.id,
+                                  live_todo_completed: false,
+                                });
+                              }
                             }}
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -264,10 +281,10 @@ export const DSALiveSection = () => {
                           </Badge>
                           <span className="text-xs text-muted-foreground">{problem.topic}</span>
                         </div>
-                        {problem.completed_at && (
+                        {problem.live_todo_completed_at && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(problem.completed_at), 'MMM dd, HH:mm')}
+                            {format(new Date(problem.live_todo_completed_at), 'MMM dd, HH:mm')}
                           </div>
                         )}
                         <div className="flex gap-1 flex-wrap">
@@ -329,19 +346,19 @@ export const DSALiveSection = () => {
             )}
           </div>
 
-          {/* Problems to Practice */}
+          {/* Live Uncompleted Todos */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <Target className="h-4 w-4 text-muted-foreground" />
-              Problems to Practice ({filteredPracticeProblems.length})
+              Live Todos Pending ({filteredLiveUncompletedTodos.length})
             </h3>
-            {filteredPracticeProblems.length === 0 ? (
+            {filteredLiveUncompletedTodos.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">No pending problems. Add some problems to get started!</p>
+                <p className="text-sm">No pending live todos. Complete more problems this week to see them here!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredPracticeProblems.slice(0, 9).map((problem) => (
+                {filteredLiveUncompletedTodos.map((problem) => (
                   <Card 
                     key={problem.id} 
                     className="border-l-4 border-l-muted-foreground cursor-pointer hover:shadow-md transition-shadow"
@@ -352,12 +369,14 @@ export const DSALiveSection = () => {
                         <div className="flex items-start justify-between">
                           <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
                           <Checkbox
-                            checked={problem.live_todo_completed || false}
+                            checked={false}
                             onCheckedChange={(checked) => {
-                              toggleLiveTodoMutation.mutate({
-                                id: problem.id,
-                                live_todo_completed: !!checked,
-                              });
+                              if (checked) {
+                                toggleLiveTodoMutation.mutate({
+                                  id: problem.id,
+                                  live_todo_completed: true,
+                                });
+                              }
                             }}
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -368,6 +387,12 @@ export const DSALiveSection = () => {
                           </Badge>
                           <span className="text-xs text-muted-foreground">{problem.topic}</span>
                         </div>
+                        {problem.completed_at && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            Solved: {format(new Date(problem.completed_at), 'MMM dd, HH:mm')}
+                          </div>
+                        )}
                         <div className="flex gap-1 flex-wrap">
                           {problem.problem_link && (
                             <Button 
