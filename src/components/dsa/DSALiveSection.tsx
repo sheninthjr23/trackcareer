@@ -39,6 +39,8 @@ interface DSAProblem {
   code_solutions: any[];
   is_live_problem: boolean;
   live_added_at: string | null;
+  live_todo_completed: boolean | null;
+  live_todo_completed_at: string | null;
 }
 
 export const DSALiveSection = () => {
@@ -80,6 +82,31 @@ export const DSALiveSection = () => {
       
       if (error) throw error;
       return data as DSAProblem[];
+    },
+  });
+
+  const toggleLiveTodoMutation = useMutation({
+    mutationFn: async ({ id, live_todo_completed }: { id: string; live_todo_completed: boolean }) => {
+      const { data, error } = await supabase
+        .from('dsa_problems')
+        .update({ 
+          live_todo_completed,
+          live_todo_completed_at: live_todo_completed ? new Date().toISOString() : null 
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dsa-live-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
+      toast({ title: 'Live todo updated' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error updating live todo', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -199,7 +226,7 @@ export const DSALiveSection = () => {
           {/* Completed Problems This Week */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-primary" />
               Completed This Week ({filteredCompletedProblems.length})
             </h3>
             {filteredCompletedProblems.length === 0 ? (
@@ -213,7 +240,7 @@ export const DSALiveSection = () => {
                 {filteredCompletedProblems.map((problem) => (
                   <Card 
                     key={problem.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-500 bg-green-50/50"
+                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary"
                     onClick={() => setSelectedProblem(problem)}
                   >
                     <CardContent className="p-4">
@@ -221,11 +248,11 @@ export const DSALiveSection = () => {
                         <div className="flex items-start justify-between">
                           <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
                           <Checkbox
-                            checked={problem.is_completed}
+                            checked={problem.live_todo_completed || false}
                             onCheckedChange={(checked) => {
-                              toggleCompletionMutation.mutate({
+                              toggleLiveTodoMutation.mutate({
                                 id: problem.id,
-                                is_completed: !!checked,
+                                live_todo_completed: !!checked,
                               });
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -305,7 +332,7 @@ export const DSALiveSection = () => {
           {/* Problems to Practice */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Target className="h-4 w-4 text-blue-600" />
+              <Target className="h-4 w-4 text-muted-foreground" />
               Problems to Practice ({filteredPracticeProblems.length})
             </h3>
             {filteredPracticeProblems.length === 0 ? (
@@ -317,27 +344,23 @@ export const DSALiveSection = () => {
                 {filteredPracticeProblems.slice(0, 9).map((problem) => (
                   <Card 
                     key={problem.id} 
-                    className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow"
+                    className="border-l-4 border-l-muted-foreground cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => setSelectedProblem(problem)}
                   >
                     <CardContent className="p-3">
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
                           <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleCompletionMutation.mutate({
+                          <Checkbox
+                            checked={problem.live_todo_completed || false}
+                            onCheckedChange={(checked) => {
+                              toggleLiveTodoMutation.mutate({
                                 id: problem.id,
-                                is_completed: true,
+                                live_todo_completed: !!checked,
                               });
                             }}
-                          >
-                            Complete
-                          </Button>
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={getLevelBadgeVariant(problem.level)} className="text-xs">
@@ -402,7 +425,8 @@ export const DSALiveSection = () => {
                   </Badge>
                   <span className="text-sm text-muted-foreground">Topic: {selectedProblem.topic}</span>
                   <span className="text-sm text-muted-foreground">
-                    Status: {selectedProblem.is_completed ? 'Completed' : 'Pending'}
+                    Status: {selectedProblem.is_completed ? 'Completed' : 'Pending'} | 
+                    Live Todo: {selectedProblem.live_todo_completed ? 'Done' : 'Pending'}
                   </span>
                 </div>
               </div>
@@ -445,6 +469,20 @@ export const DSALiveSection = () => {
                   </Button>
                 )}
                 <Button
+                  variant={selectedProblem.live_todo_completed ? "destructive" : "default"}
+                  onClick={() => {
+                    toggleLiveTodoMutation.mutate({
+                      id: selectedProblem.id,
+                      live_todo_completed: !selectedProblem.live_todo_completed,
+                    });
+                    setSelectedProblem(null);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  {selectedProblem.live_todo_completed ? 'Mark Undone' : 'Mark Done'}
+                </Button>
+                <Button
                   variant={selectedProblem.is_completed ? "destructive" : "default"}
                   onClick={() => {
                     toggleCompletionMutation.mutate({
@@ -456,7 +494,7 @@ export const DSALiveSection = () => {
                   className="flex items-center gap-2"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  {selectedProblem.is_completed ? 'Redo' : 'Complete'}
+                  {selectedProblem.is_completed ? 'Redo Problem' : 'Complete Problem'}
                 </Button>
               </div>
 
