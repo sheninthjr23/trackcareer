@@ -22,6 +22,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Code, Plus, Copy, Edit, Trash2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface CodeSolution {
   id: string;
@@ -48,6 +50,14 @@ const LANGUAGE_NAMES = {
   java: 'Java',
   python: 'Python',
   javascript: 'JavaScript',
+};
+
+// Map our language keys to syntax highlighter language names
+const SYNTAX_LANGUAGE_MAP = {
+  cpp: 'cpp',
+  java: 'java',
+  python: 'python',
+  javascript: 'javascript',
 };
 
 export const DSACodeSolutions: React.FC<DSACodeSolutionsProps> = ({
@@ -271,11 +281,23 @@ export const DSACodeSolutions: React.FC<DSACodeSolutionsProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div 
-                  className="bg-gray-900 text-gray-100 p-3 rounded text-xs font-mono overflow-x-auto max-h-32 overflow-y-auto"
-                  style={{ backgroundColor: '#1e1e1e', color: '#d4d4d4' }}
-                >
-                  <pre>{solution.code.substring(0, 200)}{solution.code.length > 200 ? '...' : ''}</pre>
+                <div className="rounded overflow-hidden max-h-32 overflow-y-auto">
+                  <SyntaxHighlighter
+                    language={SYNTAX_LANGUAGE_MAP[solution.language]}
+                    style={vscDarkPlus}
+                    customStyle={{
+                      margin: 0,
+                      fontSize: '11px',
+                      lineHeight: '1.2',
+                      maxHeight: '128px',
+                      background: '#1e1e1e',
+                    }}
+                    showLineNumbers={false}
+                    wrapLines={true}
+                    wrapLongLines={true}
+                  >
+                    {solution.code.substring(0, 200)}{solution.code.length > 200 ? '...' : ''}
+                  </SyntaxHighlighter>
                 </div>
                 {solution.notes && (
                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
@@ -301,11 +323,24 @@ export const DSACodeSolutions: React.FC<DSACodeSolutionsProps> = ({
           </DialogHeader>
           {selectedSolution && (
             <div className="space-y-4">
-              <div 
-                className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto"
-                style={{ backgroundColor: '#1e1e1e', color: '#d4d4d4' }}
-              >
-                <pre>{selectedSolution.code}</pre>
+              <div className="rounded overflow-hidden">
+                <SyntaxHighlighter
+                  language={SYNTAX_LANGUAGE_MAP[selectedSolution.language]}
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    padding: '16px',
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                    background: '#1e1e1e',
+                    borderRadius: '6px',
+                  }}
+                  showLineNumbers={true}
+                  wrapLines={true}
+                  wrapLongLines={true}
+                >
+                  {selectedSolution.code}
+                </SyntaxHighlighter>
               </div>
               {selectedSolution.notes && (
                 <div>
