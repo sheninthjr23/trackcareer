@@ -1,14 +1,79 @@
-User-agent: Googlebot
+User-agent: *
 Allow: /
 
+# High-priority pages for search engines
+Allow: /
+Allow: /login
+Allow: /signup
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /help
+Allow: /community
+Allow: /blog
+Allow: /tutorials
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Disallow: /_next/
+Disallow: /tmp/
+
+# Block search result pages and dynamic filters
+Disallow: /search?
+Disallow: /*?filter=
+Disallow: /*?sort=
+Disallow: /*&filter=
+Disallow: /*&sort=
+
+# Sitemap location
+Sitemap: https://trackcareer.lovable.app/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Specific instructions for popular crawlers
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
 User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 2
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 2
+
+User-agent: facebookexternalhit
 Allow: /
 
 User-agent: Twitterbot
 Allow: /
 
-User-agent: facebookexternalhit
+User-agent: LinkedInBot
 Allow: /
 
-User-agent: *
+# Career-specific crawlers
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: IndeedBot
+Allow: /
+
+User-agent: JobBoardsBot
 Allow: /

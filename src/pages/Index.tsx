@@ -15,12 +15,15 @@ import { Analytics } from '@/components/Analytics';
 import { Auth } from '@/components/Auth';
 import { Header } from '@/components/Header';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { SEOHead, useSectionSEO } from '@/components/SEOHead';
+import { SEOWrapper } from '@/components/SEOWrapper';
 
 export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'dsa' | 'analytics' | 'settings';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const { user, loading } = useAuth();
+  const sectionSEO = useSectionSEO(activeSection);
 
   if (loading) {
     return (
@@ -120,22 +123,37 @@ function AppContent() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
-        <main className="flex-1 overflow-hidden">
-          <Header 
-            title={getSectionTitle()} 
-            description={getSectionDescription()} 
-          />
-          <div className="p-6 h-[calc(100vh-6rem)] overflow-auto">
-            <div className="max-w-7xl mx-auto">
-              {renderContent()}
-            </div>
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    <>
+      <SEOHead 
+        title={sectionSEO.title}
+        description={sectionSEO.description}
+        keywords={sectionSEO.keywords}
+        schemaData={sectionSEO.schemaData}
+      />
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
+          <SEOWrapper section={activeSection} className="flex-1 overflow-hidden">
+            <Header 
+              title={getSectionTitle()} 
+              description={getSectionDescription()} 
+            />
+            <section 
+              className="p-6 h-[calc(100vh-6rem)] overflow-auto"
+              aria-label={`${getSectionTitle()} content area`}
+              role="region"
+            >
+              <div className="max-w-7xl mx-auto">
+                <h1 className="sr-only">
+                  {getSectionTitle()} - {getSectionDescription()}
+                </h1>
+                {renderContent()}
+              </div>
+            </section>
+          </SEOWrapper>
+        </div>
+      </SidebarProvider>
+    </>
   );
 }
 

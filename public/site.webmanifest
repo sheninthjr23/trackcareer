@@ -1,0 +1,114 @@
+{
+  "name": "TrackCareer - Professional Career Tracking Platform",
+  "short_name": "TrackCareer",
+  "description": "The ultimate career tracking platform for students and professionals. Track job applications, manage resumes, practice DSA problems, and accelerate your career growth.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["business", "education", "productivity", "career"],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TrackCareer Dashboard - Desktop View"
+    },
+    {
+      "src": "/screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "TrackCareer Mobile App"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png", 
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180", 
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512", 
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard", 
+      "description": "View your career tracking dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/shortcut-dashboard.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Job Applications",
+      "short_name": "Jobs",
+      "description": "Track your job applications",
+      "url": "/jobs", 
+      "icons": [
+        {
+          "src": "/shortcut-jobs.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Resume Manager",
+      "short_name": "Resumes",
+      "description": "Manage your resumes",
+      "url": "/resumes",
+      "icons": [
+        {
+          "src": "/shortcut-resumes.png", 
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "DSA Practice",
+      "short_name": "DSA",
+      "description": "Track coding practice progress",
+      "url": "/dsa",
+      "icons": [
+        {
+          "src": "/shortcut-dsa.png",
+          "sizes": "96x96" 
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
