@@ -139,7 +139,7 @@ function AppContent() {
               description={getSectionDescription()} 
             />
             <section 
-              className="p-2 xs:p-3 sm:p-4 md:p-6 h-[calc(100vh-4rem)] xs:h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] overflow-auto"
+              className="p-2 sm:p-3 md:p-4 lg:p-6 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] overflow-auto"
               aria-label={`${getSectionTitle()} content area`}
               role="region"
             >
