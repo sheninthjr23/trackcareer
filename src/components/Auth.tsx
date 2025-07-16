@@ -13,23 +13,23 @@ export function Auth() {
   const [password, setPassword] = useState('');
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-2 xs:p-4 sm:p-6 md:p-8 safe-top safe-bottom">
-      <div className="w-full max-w-sm xs:max-w-md sm:max-w-lg md:max-w-2xl mx-auto">
+    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-2xl mx-auto">
         <AuthHeader />
 
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm shadow-2xl w-full">
-          <CardContent className="p-3 xs:p-4 sm:p-6 md:p-8 w-full">
+          <CardContent className="p-8 w-full">
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20 mb-4 xs:mb-6 sm:mb-8 h-auto">
+              <TabsList className="grid w-full grid-cols-2 bg-white/10 border-white/20 mb-8">
                 <TabsTrigger 
                   value="signin" 
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-white w-full touch-target text-xs xs:text-sm sm:text-base py-2 xs:py-2.5 sm:py-3"
+                  className="data-[state=active]:bg-white data-[state=active]:text-black text-white w-full"
                 >
                   Sign In
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup"
-                  className="data-[state=active]:bg-white data-[state=active]:text-black text-white w-full touch-target text-xs xs:text-sm sm:text-base py-2 xs:py-2.5 sm:py-3"
+                  className="data-[state=active]:bg-white data-[state=active]:text-black text-white w-full"
                 >
                   Sign Up
                 </TabsTrigger>

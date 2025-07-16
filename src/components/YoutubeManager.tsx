@@ -611,7 +611,7 @@ export function YoutubeManager() {
       {/* Hero Section */}
       <div className="text-center py-12 bg-white/5 backdrop-blur rounded-3xl border border-white/10">
         {/* Global Stats */}
-        <div className="grid-responsive-stats max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
           <div className="bg-white/5 backdrop-blur rounded-xl p-4 border border-white/10">
             <div className="flex items-center justify-center gap-2 mb-2">
               <FolderOpen className="h-5 w-5 text-white" />
@@ -912,7 +912,7 @@ export function YoutubeManager() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1">
           <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
             <Folder className="h-5 w-5 text-yellow-500" />
