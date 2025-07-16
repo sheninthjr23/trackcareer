@@ -131,7 +131,7 @@ function AppContent() {
         schemaData={sectionSEO.schemaData}
       />
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-background">
+        <div className="min-h-screen flex w-full bg-background mobile-safe">
           <AppSidebar activeSection={activeSection} setActiveSection={setActiveSection} />
           <SEOWrapper section={activeSection} className="flex-1 overflow-hidden">
             <Header 
@@ -139,11 +139,11 @@ function AppContent() {
               description={getSectionDescription()} 
             />
             <section 
-              className="p-6 h-[calc(100vh-6rem)] overflow-auto"
+              className="p-2 xs:p-3 sm:p-4 md:p-6 h-[calc(100vh-4rem)] xs:h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] overflow-auto"
               aria-label={`${getSectionTitle()} content area`}
               role="region"
             >
-              <div className="max-w-7xl mx-auto">
+              <div className="container-responsive">
                 <h1 className="sr-only">
                   {getSectionTitle()} - {getSectionDescription()}
                 </h1>

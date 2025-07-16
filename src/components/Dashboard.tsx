@@ -210,27 +210,27 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6">
       {/* Welcome Section */}
-      <div className="space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Welcome back!</h2>
-        <p className="text-muted-foreground">
+      <div className="space-y-1 xs:space-y-2">
+        <h2 className="text-responsive-xl font-bold tracking-tight">Welcome back!</h2>
+        <p className="text-responsive-sm text-muted-foreground">
           Here's an overview of your career development journey.
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid-responsive-stats">
         {statsConfig.map((stat) => {
           const IconComponent = stat.icon;
           return (
             <Card key={stat.title} className="card-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 xs:p-4 sm:p-6">
+                <CardTitle className="text-xs xs:text-sm font-medium">{stat.title}</CardTitle>
                 <IconComponent className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+              <CardContent className="p-3 xs:p-4 sm:p-6 pt-0">
+                <div className="text-lg xs:text-xl sm:text-2xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground">{stat.description}</p>
               </CardContent>
             </Card>
@@ -238,34 +238,34 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
         })}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 xs:gap-5 sm:gap-6 lg:grid-cols-2">
         {/* Recent Activity */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+          <CardHeader className="p-3 xs:p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-sm xs:text-base">
+              <TrendingUp className="h-4 w-4 xs:h-5 xs:w-5" />
               Recent Activity
             </CardTitle>
-            <CardDescription>Your latest actions across all sections</CardDescription>
+            <CardDescription className="text-xs xs:text-sm">Your latest actions across all sections</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-3 xs:p-4 sm:p-6 pt-0">
+            <div className="space-y-3 xs:space-y-4">
               {recentActivities.length > 0 ? (
                 recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                  <div key={index} className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-0">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="text-xs">
                           {activity.type}
                         </Badge>
-                        <span className="text-sm font-medium">{activity.action}</span>
+                        <span className="text-xs xs:text-sm font-medium truncate">{activity.action}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">{activity.time}</p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">No recent activities found. Start by uploading a resume or adding a course!</p>
+                <p className="text-xs xs:text-sm text-muted-foreground">No recent activities found. Start by uploading a resume or adding a course!</p>
               )}
             </div>
           </CardContent>
@@ -273,41 +273,41 @@ export function Dashboard({ onSectionChange }: DashboardProps = {}) {
 
         {/* Quick Actions */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+          <CardHeader className="p-3 xs:p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-sm xs:text-base">
+              <Calendar className="h-4 w-4 xs:h-5 xs:w-5" />
               Quick Actions
             </CardTitle>
-            <CardDescription>Common tasks to keep you productive</CardDescription>
+            <CardDescription className="text-xs xs:text-sm">Common tasks to keep you productive</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-3 xs:p-4 sm:p-6 pt-0">
+            <div className="space-y-2 xs:space-y-3">
               <div 
                 onClick={() => handleQuickAction('resumes')}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                className="flex items-center justify-between p-2 xs:p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors touch-target"
               >
-                <span className="text-sm font-medium">Upload new resume</span>
+                <span className="text-xs xs:text-sm font-medium">Upload new resume</span>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </div>
               <div 
                 onClick={() => handleQuickAction('courses')}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                className="flex items-center justify-between p-2 xs:p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors touch-target"
               >
-                <span className="text-sm font-medium">Add new course</span>
+                <span className="text-xs xs:text-sm font-medium">Add new course</span>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </div>
               <div 
                 onClick={() => handleQuickAction('activities')}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                className="flex items-center justify-between p-2 xs:p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors touch-target"
               >
-                <span className="text-sm font-medium">Track new activity</span>
+                <span className="text-xs xs:text-sm font-medium">Track new activity</span>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </div>
               <div 
                 onClick={() => handleQuickAction('jobs')}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                className="flex items-center justify-between p-2 xs:p-3 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors touch-target"
               >
-                <span className="text-sm font-medium">Log job application</span>
+                <span className="text-xs xs:text-sm font-medium">Log job application</span>
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>

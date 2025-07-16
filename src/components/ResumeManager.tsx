@@ -374,12 +374,12 @@ export function ResumeManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Resume Management</h1>
-          <p className="text-muted-foreground">Upload, organize, and share your resumes</p>
+      <div className="flex-responsive items-responsive justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-responsive-xl font-bold text-white">Resume Management</h1>
+          <p className="text-responsive-sm text-muted-foreground">Upload, organize, and share your resumes</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col xs:flex-row gap-2 flex-shrink-0">
           <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="button-elegant-outline">
@@ -458,7 +458,7 @@ export function ResumeManager() {
         </TabsList>
 
         <TabsContent value="folders" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid-responsive-cards">
             {folders.map((folder) => (
               <Card 
                 key={folder.id} 
@@ -523,7 +523,7 @@ export function ResumeManager() {
               <h3 className="text-xl font-semibold text-white mb-4">
                 Resumes in {folders.find(f => f.id === selectedFolder)?.name}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid-responsive-cards">
                 {filteredResumes.map((resume) => (
                   <Card key={resume.id} className="elegant-card">
                     <CardHeader className="pb-2">
@@ -602,7 +602,7 @@ export function ResumeManager() {
         </TabsContent>
 
         <TabsContent value="all" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid-responsive-cards">
             {resumes.map((resume) => (
               <Card key={resume.id} className="elegant-card">
                 <CardHeader className="pb-2">
