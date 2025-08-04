@@ -176,6 +176,22 @@ export const useSectionSEO = (section: string) => {
         "description": "Educational course and learning progress tracking system"
       }
     },
+    stories: {
+      title: "Story Authoring - Write & Publish Stories | TrackCareer",
+      description: "Advanced story authoring platform with AI assistance. Create, edit, and publish stories with rich markdown editor, version control, and analytics.",
+      keywords: "story authoring, writing platform, content creation, AI writing assistant, markdown editor, story publishing, writing analytics",
+      schemaData: {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Story Authoring Platform",
+        "description": "Professional story authoring and publishing platform",
+        "mainEntity": {
+          "@type": "CreativeWork",
+          "name": "Story Authoring Tool",
+          "applicationCategory": "WritingApplication"
+        }
+      }
+    },
     analytics: {
       title: "Career Analytics - Insights & Progress Reports | TrackCareer",
       description: "Get detailed analytics on your career progress. Track job application success rates, coding practice trends, and professional development metrics.",

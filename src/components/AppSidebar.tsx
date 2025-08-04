@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { FileText, BookOpen, Target, Briefcase, LayoutGrid, Sparkles, MessageCircleQuestion, Youtube, Settings, BarChart3, Code } from "lucide-react";
+import { FileText, BookOpen, Target, Briefcase, LayoutGrid, Sparkles, MessageCircleQuestion, Youtube, Settings, BarChart3, Code, PenTool } from "lucide-react";
 import type { Section } from "@/pages/Index";
 
 interface AppSidebarProps {
@@ -66,6 +66,12 @@ const menuItems = [
     section: "dsa" as Section,
     icon: Code,
     description: "Data Structures & Algorithms"
+  },
+  {
+    title: "Story Authoring",
+    section: "stories" as Section,
+    icon: PenTool,
+    description: "Write & Publish Stories"
   },
   {
     title: "Analytics & Reports",

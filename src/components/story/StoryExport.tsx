@@ -9,9 +9,20 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Database } from '@/integrations/supabase/types';
-
-type Story = Database['public']['Tables']['stories']['Row'];
+// Define story type directly
+type Story = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  content: string;
+  status: string;
+  category_id: string | null;
+  word_count: number;
+  reading_time: number;
+  created_at: string;
+  updated_at: string;
+};
 
 interface StoryExportProps {
   story: Story;
@@ -358,7 +369,7 @@ export function StoryExport({ story }: StoryExportProps) {
                 <Checkbox
                   id="metadata"
                   checked={includeMetadata}
-                  onCheckedChange={setIncludeMetadata}
+                  onCheckedChange={(checked) => setIncludeMetadata(checked === true)}
                 />
                 <label htmlFor="metadata" className="text-sm">
                   Include title and description
@@ -368,7 +379,7 @@ export function StoryExport({ story }: StoryExportProps) {
                 <Checkbox
                   id="timestamp"
                   checked={includeTimestamp}
-                  onCheckedChange={setIncludeTimestamp}
+                  onCheckedChange={(checked) => setIncludeTimestamp(checked === true)}
                 />
                 <label htmlFor="timestamp" className="text-sm">
                   Include creation and update dates

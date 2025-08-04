@@ -14,10 +14,29 @@ import { Plus, Search, Filter, Eye, Edit, Trash2, Share, Download, BarChart, Boo
 import { StoryEditor } from './story/StoryEditor';
 import { StoryAnalytics } from './story/StoryAnalytics';
 import { StoryExport } from './story/StoryExport';
-import type { Database } from '@/integrations/supabase/types';
+// Define types directly since the database types might not be available yet
+type Story = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  content: string;
+  status: string;
+  category_id: string | null;
+  word_count: number;
+  reading_time: number;
+  created_at: string;
+  updated_at: string;
+};
 
-type Story = Database['public']['Tables']['stories']['Row'];
-type StoryCategory = Database['public']['Tables']['story_categories']['Row'];
+type StoryCategory = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  created_at: string;
+  updated_at: string;
+};
 
 interface StoryManagerProps {
   className?: string;

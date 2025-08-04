@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -602,6 +602,153 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "resume_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stories: {
+        Row: {
+          category_id: string | null
+          content: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reading_time: number | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          word_count: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reading_time?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          word_count?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reading_time?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "story_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      story_versions: {
+        Row: {
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          story_id: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          story_id: string
+          title: string
+          version_number: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          story_id?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_versions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_views: {
+        Row: {
+          created_at: string
+          id: string
+          story_id: string
+          user_agent: string | null
+          viewer_ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          story_id: string
+          user_agent?: string | null
+          viewer_ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          story_id?: string
+          user_agent?: string | null
+          viewer_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]

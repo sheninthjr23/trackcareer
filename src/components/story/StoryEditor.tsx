@@ -36,10 +36,30 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import type { Database } from '@/integrations/supabase/types';
+// Define types directly
+type Story = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  content: string;
+  status: string;
+  category_id: string | null;
+  word_count: number;
+  reading_time: number;
+  created_at: string;
+  updated_at: string;
+};
 
-type Story = Database['public']['Tables']['stories']['Row'];
-type StoryVersion = Database['public']['Tables']['story_versions']['Row'];
+type StoryVersion = {
+  id: string;
+  story_id: string;
+  title: string;
+  content: string;
+  description: string | null;
+  version_number: number;
+  created_at: string;
+};
 
 interface StoryEditorProps {
   story: Story;

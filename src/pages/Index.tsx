@@ -9,6 +9,7 @@ import { YoutubeManager } from '@/components/YoutubeManager';
 import { ActivityTracker } from '@/components/ActivityTracker';
 import { JobApplicationTracker } from '@/components/JobApplicationTracker';
 import { DSATracker } from '@/components/DSATracker';
+import { StoryManager } from '@/components/StoryManager';
 import { Dashboard } from '@/components/Dashboard';
 import { Settings } from '@/components/Settings';
 import { Analytics } from '@/components/Analytics';
@@ -18,7 +19,7 @@ import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { SEOHead, useSectionSEO } from '@/components/SEOHead';
 import { SEOWrapper } from '@/components/SEOWrapper';
 
-export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'dsa' | 'analytics' | 'settings';
+export type Section = 'dashboard' | 'resumes' | 'courses' | 'doubts' | 'youtube' | 'activities' | 'jobs' | 'dsa' | 'stories' | 'analytics' | 'settings';
 
 function AppContent() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -59,6 +60,8 @@ function AppContent() {
         return <JobApplicationTracker />;
       case 'dsa':
         return <DSATracker />;
+      case 'stories':
+        return <StoryManager />;
       case 'analytics':
         return <Analytics />;
       case 'settings':
@@ -86,6 +89,8 @@ function AppContent() {
         return 'Job Applications';
       case 'dsa':
         return 'DSA Problem Tracker';
+      case 'stories':
+        return 'Story Authoring';
       case 'analytics':
         return 'Analytics & Reports';
       case 'settings':
@@ -113,6 +118,8 @@ function AppContent() {
         return 'Keep track of your job applications and progress';
       case 'dsa':
         return 'Track your Data Structures & Algorithms practice journey';
+      case 'stories':
+        return 'Create and manage your stories with AI assistance';
       case 'analytics':
         return 'View comprehensive analytics and progress reports';
       case 'settings':
