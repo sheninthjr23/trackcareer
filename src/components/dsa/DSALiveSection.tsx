@@ -23,6 +23,8 @@ import { ExternalLink, Github, Calendar, Target, CheckCircle, Youtube, Code, Fil
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { DSACodeSolutions } from './DSACodeSolutions';
+import { DraggableProblemCard } from './DraggableProblemCard';
+import { DroppableZone } from './DroppableZone';
 
 interface DSAProblem {
   id: string;
@@ -251,98 +253,44 @@ export const DSALiveSection = () => {
                 <p className="text-sm">Complete some problems below to see them here!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLiveCompletedTodos.map((problem) => (
-                  <Card 
-                    key={problem.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary bg-primary/5"
-                    onClick={() => setSelectedProblem(problem)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
-                          <Checkbox
-                            checked={true}
-                            onCheckedChange={(checked) => {
-                              if (!checked) {
-                                toggleLiveTodoMutation.mutate({
-                                  id: problem.id,
-                                  live_todo_completed: false,
-                                });
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getLevelBadgeVariant(problem.level)} className="text-xs">
-                            {problem.level}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{problem.topic}</span>
-                        </div>
+              <DroppableZone
+                id="completed-live-section"
+                data={{ type: 'completed-section' }}
+                className="relative"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredLiveCompletedTodos.map((problem) => (
+                    <DraggableProblemCard key={problem.id} problem={problem}>
+                      <div className="flex items-center justify-between mt-2">
+                        <Checkbox
+                          checked={true}
+                          onCheckedChange={(checked) => {
+                            if (!checked) {
+                              toggleLiveTodoMutation.mutate({
+                                id: problem.id,
+                                live_todo_completed: false,
+                              });
+                            }
+                          }}
+                        />
                         {problem.live_todo_completed_at && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {format(new Date(problem.live_todo_completed_at), 'MMM dd, HH:mm')}
                           </div>
                         )}
-                        <div className="flex gap-1 flex-wrap">
-                          {problem.problem_link && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(problem.problem_link!, '_blank');
-                              }}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {problem.github_solution_link && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(problem.github_solution_link!, '_blank');
-                              }}
-                            >
-                              <Github className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {problem.youtube_link && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(problem.youtube_link!, '_blank');
-                              }}
-                            >
-                              <Youtube className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {problem.code_solutions && problem.code_solutions.length > 0 && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Code className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedProblem(problem)}
+                        >
+                          Details
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </DraggableProblemCard>
+                  ))}
+                </div>
+              </DroppableZone>
             )}
           </div>
 
@@ -357,75 +305,44 @@ export const DSALiveSection = () => {
                 <p className="text-sm">No pending live todos. Complete more problems this week to see them here!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredLiveUncompletedTodos.map((problem) => (
-                  <Card 
-                    key={problem.id} 
-                    className="border-l-4 border-l-muted-foreground cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setSelectedProblem(problem)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h4 className="font-medium text-sm line-clamp-2">{problem.title}</h4>
-                          <Checkbox
-                            checked={false}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                toggleLiveTodoMutation.mutate({
-                                  id: problem.id,
-                                  live_todo_completed: true,
-                                });
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getLevelBadgeVariant(problem.level)} className="text-xs">
-                            {problem.level}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{problem.topic}</span>
-                        </div>
+              <DroppableZone
+                id="pending-live-section"
+                data={{ type: 'live-section' }}
+                className="relative"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredLiveUncompletedTodos.map((problem) => (
+                    <DraggableProblemCard key={problem.id} problem={problem}>
+                      <div className="flex items-center justify-between mt-2">
+                        <Checkbox
+                          checked={false}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              toggleLiveTodoMutation.mutate({
+                                id: problem.id,
+                                live_todo_completed: true,
+                              });
+                            }
+                          }}
+                        />
                         {problem.completed_at && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             Solved: {format(new Date(problem.completed_at), 'MMM dd, HH:mm')}
                           </div>
                         )}
-                        <div className="flex gap-1 flex-wrap">
-                          {problem.problem_link && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(problem.problem_link!, '_blank');
-                              }}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {problem.youtube_link && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-6 px-2 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(problem.youtube_link!, '_blank');
-                              }}
-                            >
-                              <Youtube className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedProblem(problem)}
+                        >
+                          Details
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </DraggableProblemCard>
+                  ))}
+                </div>
+              </DroppableZone>
             )}
           </div>
         </CardContent>
