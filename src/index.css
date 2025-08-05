@@ -1,4 +1,5 @@
 
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import 'highlight.js/styles/github-dark.css';
 @tailwind base;
@@ -140,110 +141,231 @@
   background: hsl(var(--muted-foreground));
 }
 
-/* Custom prose styling for markdown preview */
+/* Notion-like markdown styling */
 @layer components {
-  .prose-dark {
-    @apply prose prose-slate prose-invert max-w-none;
+  .notion-theme {
+    @apply max-w-none;
+    line-height: 1.6;
+    color: hsl(var(--foreground));
   }
   
-  .prose-dark h1 {
+  .notion-theme h1 {
     @apply text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0;
-    border-bottom: 1px solid hsl(var(--border));
-    padding-bottom: 0.5rem;
+    color: hsl(var(--foreground));
+    font-weight: 700;
+    line-height: 1.2;
   }
   
-  .prose-dark h2 {
+  .notion-theme h2 {
     @apply text-2xl font-semibold text-foreground mb-4 mt-6;
-    border-bottom: 1px solid hsl(var(--border));
-    padding-bottom: 0.25rem;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    line-height: 1.3;
   }
   
-  .prose-dark h3 {
+  .notion-theme h3 {
     @apply text-xl font-semibold text-foreground mb-3 mt-5;
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    line-height: 1.3;
   }
   
-  .prose-dark h4 {
+  .notion-theme h4 {
     @apply text-lg font-semibold text-foreground mb-2 mt-4;
+    color: hsl(var(--foreground));
+    font-weight: 600;
   }
   
-  .prose-dark h5 {
+  .notion-theme h5 {
     @apply text-base font-semibold text-foreground mb-2 mt-3;
+    color: hsl(var(--foreground));
+    font-weight: 600;
   }
   
-  .prose-dark h6 {
+  .notion-theme h6 {
     @apply text-sm font-semibold text-foreground mb-2 mt-3;
+    color: hsl(var(--foreground));
+    font-weight: 600;
   }
   
-  .prose-dark p {
-    @apply text-foreground leading-7 mb-4;
+  .notion-theme p {
+    @apply leading-7 mb-4;
+    color: hsl(var(--foreground));
+    margin: 0 0 16px 0;
   }
   
-  .prose-dark a {
-    @apply text-blue-400 hover:text-blue-300 underline decoration-blue-400/50 hover:decoration-blue-300/50 transition-colors;
+  .notion-theme a {
+    color: #3b82f6;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: all 0.2s ease;
   }
   
-  .prose-dark strong {
-    @apply font-bold text-foreground;
+  .notion-theme a:hover {
+    color: #60a5fa;
   }
   
-  .prose-dark em {
-    @apply italic text-foreground;
+  .notion-theme strong {
+    @apply font-bold;
+    color: hsl(var(--foreground));
+    font-weight: 700;
   }
   
-  .prose-dark code {
-    @apply bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono border border-border;
+  .notion-theme em {
+    @apply italic;
+    color: hsl(var(--foreground));
   }
   
-  .prose-dark pre {
-    @apply bg-muted border border-border rounded-md p-4 overflow-x-auto my-4;
+  .notion-theme code {
+    background: rgba(135, 131, 120, 0.15);
+    color: #eb5757;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.9em;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-weight: 500;
+    border: 1px solid rgba(135, 131, 120, 0.2);
   }
   
-  .prose-dark pre code {
-    @apply bg-transparent border-none p-0 text-sm;
+  .notion-theme pre {
+    background: rgba(135, 131, 120, 0.1);
+    border: 1px solid rgba(135, 131, 120, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   }
   
-  .prose-dark blockquote {
-    @apply border-l-4 border-border pl-4 italic text-muted-foreground bg-muted/30 py-2 my-4;
+  .notion-theme pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: hsl(var(--foreground));
+    font-size: 14px;
   }
   
-  .prose-dark ul {
-    @apply list-disc pl-6 mb-4 space-y-1;
+  /* Improved blockquote styling with better contrast */
+  .notion-theme blockquote {
+    background: rgba(241, 241, 239, 0.1);
+    border-left: 4px solid #d69e2e;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+    position: relative;
   }
   
-  .prose-dark ol {
+  .notion-theme blockquote::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #d69e2e, #b7791f);
+  }
+  
+  .notion-theme blockquote p {
+    margin: 0;
+    color: hsl(var(--foreground));
+    font-style: italic;
+    opacity: 0.9;
+  }
+  
+  .notion-theme ul {
+    @apply list-none pl-0 mb-4 space-y-1;
+    margin: 0 0 16px 0;
+  }
+  
+  .notion-theme ul li {
+    position: relative;
+    padding-left: 24px;
+    color: hsl(var(--foreground));
+    line-height: 1.6;
+  }
+  
+  .notion-theme ul li::before {
+    content: '•';
+    position: absolute;
+    left: 8px;
+    color: hsl(var(--muted-foreground));
+    font-weight: bold;
+  }
+  
+  .notion-theme ol {
     @apply list-decimal pl-6 mb-4 space-y-1;
+    margin: 0 0 16px 0;
+    color: hsl(var(--foreground));
   }
   
-  .prose-dark li {
-    @apply text-foreground;
+  .notion-theme ol li {
+    padding-left: 8px;
+    line-height: 1.6;
   }
   
-  .prose-dark table {
-    @apply w-full border-collapse border border-border mb-4;
+  .notion-theme li {
+    color: hsl(var(--foreground));
   }
   
-  .prose-dark th {
-    @apply border border-border px-4 py-2 bg-muted font-semibold text-foreground;
+  .notion-theme table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    border: 1px solid rgba(135, 131, 120, 0.2);
+    border-radius: 6px;
+    overflow: hidden;
   }
   
-  .prose-dark td {
-    @apply border border-border px-4 py-2 text-foreground;
+  .notion-theme th {
+    background: rgba(135, 131, 120, 0.1);
+    border: 1px solid rgba(135, 131, 120, 0.2);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: hsl(var(--foreground));
   }
   
-  .prose-dark hr {
-    @apply border-border my-6;
+  .notion-theme td {
+    border: 1px solid rgba(135, 131, 120, 0.2);
+    padding: 12px 16px;
+    color: hsl(var(--foreground));
   }
   
-  .prose-dark img {
-    @apply rounded-md border border-border max-w-full;
+  .notion-theme hr {
+    border: none;
+    height: 1px;
+    background: rgba(135, 131, 120, 0.2);
+    margin: 24px 0;
   }
   
-  .prose-dark input[type="checkbox"] {
-    @apply mr-2 accent-primary;
+  .notion-theme img {
+    border-radius: 6px;
+    max-width: 100%;
+    height: auto;
+    margin: 16px 0;
+    border: 1px solid rgba(135, 131, 120, 0.2);
+  }
+  
+  .notion-theme input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #3b82f6;
+    transform: scale(1.1);
+  }
+  
+  /* Task lists */
+  .notion-theme li:has(input[type="checkbox"]) {
+    list-style: none;
+    position: relative;
+  }
+  
+  .notion-theme li:has(input[type="checkbox"])::before {
+    display: none;
   }
   
   /* Syntax highlighting overrides for dark theme */
-  .prose-dark .hljs {
-    @apply bg-muted border border-border rounded;
+  .notion-theme .hljs {
+    background: rgba(135, 131, 120, 0.1) !important;
+    border: 1px solid rgba(135, 131, 120, 0.2);
+    border-radius: 6px;
   }
 }

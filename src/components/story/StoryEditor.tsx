@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+
 // Define types directly
 type Story = {
   id: string;
@@ -91,6 +92,17 @@ export function StoryEditor({ story, onClose, onSave }: StoryEditorProps) {
   const [editorTheme, setEditorTheme] = useState('default');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Memoize the rendered markdown to force re-renders when content changes
+  const renderedMarkdown = useMemo(() => (
+    <ReactMarkdown
+      key={content} // Force re-render when content changes
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeHighlight]}
+    >
+      {content || '*Preview will appear here as you type...*'}
+    </ReactMarkdown>
+  ), [content]);
 
   // Auto-save functionality
   const autoSaveMutation = useMutation({
@@ -478,18 +490,13 @@ This is where AI-generated content would appear. The system would use the prompt
       <div className="flex-1 overflow-hidden">
         {isPreviewMode ? (
           <div 
-            className="h-full p-8 overflow-y-auto prose-dark"
+            className="h-full p-8 overflow-y-auto notion-theme"
             style={{ 
               fontSize: `${fontSize}px`,
               fontFamily: fontFamily === 'serif' ? 'Georgia, serif' : fontFamily === 'sans' ? 'system-ui, sans-serif' : 'monospace'
             }}
           >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
-            >
-              {content}
-            </ReactMarkdown>
+            {renderedMarkdown}
           </div>
         ) : (
           <ResizablePanelGroup direction="horizontal">
@@ -508,18 +515,13 @@ This is where AI-generated content would appear. The system would use the prompt
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50}>
               <div 
-                className="h-full p-8 overflow-y-auto prose-dark bg-muted/50"
+                className="h-full p-8 overflow-y-auto notion-theme bg-muted/20"
                 style={{ 
                   fontSize: `${fontSize}px`,
                   fontFamily: fontFamily === 'serif' ? 'Georgia, serif' : fontFamily === 'sans' ? 'system-ui, sans-serif' : 'monospace'
                 }}
               >
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeHighlight]}
-                >
-                  {content || '*Preview will appear here as you type...*'}
-                </ReactMarkdown>
+                {renderedMarkdown}
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
