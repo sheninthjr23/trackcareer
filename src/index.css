@@ -1,5 +1,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import 'highlight.js/styles/github-dark.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -137,4 +138,112 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
+}
+
+/* Custom prose styling for markdown preview */
+@layer components {
+  .prose-dark {
+    @apply prose prose-slate prose-invert max-w-none;
+  }
+  
+  .prose-dark h1 {
+    @apply text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0;
+    border-bottom: 1px solid hsl(var(--border));
+    padding-bottom: 0.5rem;
+  }
+  
+  .prose-dark h2 {
+    @apply text-2xl font-semibold text-foreground mb-4 mt-6;
+    border-bottom: 1px solid hsl(var(--border));
+    padding-bottom: 0.25rem;
+  }
+  
+  .prose-dark h3 {
+    @apply text-xl font-semibold text-foreground mb-3 mt-5;
+  }
+  
+  .prose-dark h4 {
+    @apply text-lg font-semibold text-foreground mb-2 mt-4;
+  }
+  
+  .prose-dark h5 {
+    @apply text-base font-semibold text-foreground mb-2 mt-3;
+  }
+  
+  .prose-dark h6 {
+    @apply text-sm font-semibold text-foreground mb-2 mt-3;
+  }
+  
+  .prose-dark p {
+    @apply text-foreground leading-7 mb-4;
+  }
+  
+  .prose-dark a {
+    @apply text-blue-400 hover:text-blue-300 underline decoration-blue-400/50 hover:decoration-blue-300/50 transition-colors;
+  }
+  
+  .prose-dark strong {
+    @apply font-bold text-foreground;
+  }
+  
+  .prose-dark em {
+    @apply italic text-foreground;
+  }
+  
+  .prose-dark code {
+    @apply bg-muted text-foreground px-1.5 py-0.5 rounded text-sm font-mono border border-border;
+  }
+  
+  .prose-dark pre {
+    @apply bg-muted border border-border rounded-md p-4 overflow-x-auto my-4;
+  }
+  
+  .prose-dark pre code {
+    @apply bg-transparent border-none p-0 text-sm;
+  }
+  
+  .prose-dark blockquote {
+    @apply border-l-4 border-border pl-4 italic text-muted-foreground bg-muted/30 py-2 my-4;
+  }
+  
+  .prose-dark ul {
+    @apply list-disc pl-6 mb-4 space-y-1;
+  }
+  
+  .prose-dark ol {
+    @apply list-decimal pl-6 mb-4 space-y-1;
+  }
+  
+  .prose-dark li {
+    @apply text-foreground;
+  }
+  
+  .prose-dark table {
+    @apply w-full border-collapse border border-border mb-4;
+  }
+  
+  .prose-dark th {
+    @apply border border-border px-4 py-2 bg-muted font-semibold text-foreground;
+  }
+  
+  .prose-dark td {
+    @apply border border-border px-4 py-2 text-foreground;
+  }
+  
+  .prose-dark hr {
+    @apply border-border my-6;
+  }
+  
+  .prose-dark img {
+    @apply rounded-md border border-border max-w-full;
+  }
+  
+  .prose-dark input[type="checkbox"] {
+    @apply mr-2 accent-primary;
+  }
+  
+  /* Syntax highlighting overrides for dark theme */
+  .prose-dark .hljs {
+    @apply bg-muted border border-border rounded;
+  }
 }

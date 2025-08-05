@@ -478,7 +478,7 @@ This is where AI-generated content would appear. The system would use the prompt
       <div className="flex-1 overflow-hidden">
         {isPreviewMode ? (
           <div 
-            className="h-full p-8 overflow-y-auto prose dark:prose-invert max-w-none"
+            className="h-full p-8 overflow-y-auto prose-dark"
             style={{ 
               fontSize: `${fontSize}px`,
               fontFamily: fontFamily === 'serif' ? 'Georgia, serif' : fontFamily === 'sans' ? 'system-ui, sans-serif' : 'monospace'
@@ -508,7 +508,7 @@ This is where AI-generated content would appear. The system would use the prompt
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50}>
               <div 
-                className="h-full p-8 overflow-y-auto prose dark:prose-invert max-w-none bg-muted/50"
+                className="h-full p-8 overflow-y-auto prose-dark bg-muted/50"
                 style={{ 
                   fontSize: `${fontSize}px`,
                   fontFamily: fontFamily === 'serif' ? 'Georgia, serif' : fontFamily === 'sans' ? 'system-ui, sans-serif' : 'monospace'
