@@ -217,19 +217,19 @@
   }
   
   .notion-theme code {
-    background: rgba(135, 131, 120, 0.15);
-    color: #eb5757;
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
     border-radius: 4px;
     padding: 2px 6px;
     font-size: 0.9em;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-weight: 500;
-    border: 1px solid rgba(135, 131, 120, 0.2);
+    border: 1px solid hsl(var(--border));
   }
   
   .notion-theme pre {
-    background: rgba(135, 131, 120, 0.1);
-    border: 1px solid rgba(135, 131, 120, 0.2);
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
     border-radius: 8px;
     padding: 16px;
     overflow-x: auto;
@@ -247,29 +247,31 @@
   
   /* Improved blockquote styling with better contrast */
   .notion-theme blockquote {
-    background: rgba(241, 241, 239, 0.1);
-    border-left: 4px solid #d69e2e;
-    padding: 12px 16px;
-    margin: 16px 0;
-    border-radius: 0 4px 4px 0;
+    background: hsl(var(--muted) / 0.5);
+    border-left: 4px solid hsl(var(--primary));
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-radius: 0 6px 6px 0;
     position: relative;
+    border: 1px solid hsl(var(--border));
   }
   
   .notion-theme blockquote::before {
     content: '';
     position: absolute;
-    left: -4px;
+    left: -1px;
     top: 0;
     bottom: 0;
     width: 4px;
-    background: linear-gradient(to bottom, #d69e2e, #b7791f);
+    background: hsl(var(--primary));
   }
   
   .notion-theme blockquote p {
     margin: 0;
-    color: hsl(var(--foreground));
+    color: hsl(var(--foreground)) !important;
     font-style: italic;
-    opacity: 0.9;
+    font-weight: 500;
+    opacity: 1;
   }
   
   .notion-theme ul {

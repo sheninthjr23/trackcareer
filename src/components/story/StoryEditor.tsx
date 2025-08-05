@@ -96,7 +96,6 @@ export function StoryEditor({ story, onClose, onSave }: StoryEditorProps) {
   // Memoize the rendered markdown to force re-renders when content changes
   const renderedMarkdown = useMemo(() => (
     <ReactMarkdown
-      key={content} // Force re-render when content changes
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeHighlight]}
     >
