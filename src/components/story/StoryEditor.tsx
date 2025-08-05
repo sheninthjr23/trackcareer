@@ -30,7 +30,15 @@ import {
   ListOrdered,
   Quote,
   Code,
-  Link
+  Link,
+  Heading1,
+  Heading2,
+  Heading3,
+  Table,
+  Minus,
+  CheckSquare,
+  ChevronDown,
+  Strikethrough
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -234,14 +242,35 @@ This is where AI-generated content would appear. The system would use the prompt
   };
 
   const toolbarButtons = [
+    // Text formatting
     { icon: Bold, action: () => insertMarkdown('**bold**'), title: 'Bold' },
     { icon: Italic, action: () => insertMarkdown('*italic*'), title: 'Italic' },
+    { icon: Strikethrough, action: () => insertMarkdown('~~strikethrough~~'), title: 'Strikethrough' },
     { icon: Underline, action: () => insertMarkdown('<u>underline</u>'), title: 'Underline' },
+    
+    // Headings
+    { icon: Heading1, action: () => insertMarkdown('\n# Heading 1'), title: 'Heading 1' },
+    { icon: Heading2, action: () => insertMarkdown('\n## Heading 2'), title: 'Heading 2' },
+    { icon: Heading3, action: () => insertMarkdown('\n### Heading 3'), title: 'Heading 3' },
+    
+    // Lists and tasks
     { icon: List, action: () => insertMarkdown('\n- List item'), title: 'Bullet List' },
     { icon: ListOrdered, action: () => insertMarkdown('\n1. List item'), title: 'Numbered List' },
-    { icon: Quote, action: () => insertMarkdown('\n> Quote'), title: 'Quote' },
-    { icon: Code, action: () => insertMarkdown('`code`'), title: 'Code' },
+    { icon: CheckSquare, action: () => insertMarkdown('\n- [ ] Todo item'), title: 'Todo/Checklist' },
+    
+    // Blocks
+    { icon: Quote, action: () => insertMarkdown('\n> Quote or callout'), title: 'Quote/Callout' },
+    { icon: Code, action: () => insertMarkdown('`code`'), title: 'Inline Code' },
+    { icon: Code, action: () => insertMarkdown('\n```\ncode block\n```'), title: 'Code Block' },
+    
+    // Structure
+    { icon: Table, action: () => insertMarkdown('\n| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Row 1    | Data     | Data     |\n| Row 2    | Data     | Data     |'), title: 'Table' },
+    { icon: Minus, action: () => insertMarkdown('\n---'), title: 'Horizontal Rule' },
     { icon: Link, action: () => insertMarkdown('[link text](url)'), title: 'Link' },
+    { icon: Image, action: () => insertMarkdown('![alt text](image-url)'), title: 'Image' },
+    
+    // Advanced blocks
+    { icon: ChevronDown, action: () => insertMarkdown('\n<details>\n<summary>Click to expand</summary>\n\nContent goes here...\n\n</details>'), title: 'Collapsible Section' },
   ];
 
   return (
@@ -326,18 +355,113 @@ This is where AI-generated content would appear. The system would use the prompt
       </div>
 
       {/* Toolbar */}
-      <div className="border-b p-2 flex items-center gap-1">
-        {toolbarButtons.map((button, index) => (
-          <Button
-            key={index}
-            variant="ghost"
-            size="sm"
-            onClick={button.action}
-            title={button.title}
-          >
-            <button.icon className="h-4 w-4" />
-          </Button>
-        ))}
+      <div className="border-b p-2 flex items-center gap-1 overflow-x-auto">
+        {/* Text formatting group */}
+        <div className="flex items-center gap-1">
+          {toolbarButtons.slice(0, 4).map((button, index) => (
+            <Button
+              key={index}
+              variant="ghost"
+              size="sm"
+              onClick={button.action}
+              title={button.title}
+              className="h-8 w-8 p-0"
+            >
+              <button.icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+        
+        <div className="w-px h-6 bg-border mx-1" />
+        
+        {/* Headings group */}
+        <div className="flex items-center gap-1">
+          {toolbarButtons.slice(4, 7).map((button, index) => (
+            <Button
+              key={index + 4}
+              variant="ghost"
+              size="sm"
+              onClick={button.action}
+              title={button.title}
+              className="h-8 w-8 p-0"
+            >
+              <button.icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+        
+        <div className="w-px h-6 bg-border mx-1" />
+        
+        {/* Lists group */}
+        <div className="flex items-center gap-1">
+          {toolbarButtons.slice(7, 10).map((button, index) => (
+            <Button
+              key={index + 7}
+              variant="ghost"
+              size="sm"
+              onClick={button.action}
+              title={button.title}
+              className="h-8 w-8 p-0"
+            >
+              <button.icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+        
+        <div className="w-px h-6 bg-border mx-1" />
+        
+        {/* Blocks group */}
+        <div className="flex items-center gap-1">
+          {toolbarButtons.slice(10, 13).map((button, index) => (
+            <Button
+              key={index + 10}
+              variant="ghost"
+              size="sm"
+              onClick={button.action}
+              title={button.title}
+              className="h-8 w-8 p-0"
+            >
+              <button.icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+        
+        <div className="w-px h-6 bg-border mx-1" />
+        
+        {/* Structure group */}
+        <div className="flex items-center gap-1">
+          {toolbarButtons.slice(13, 17).map((button, index) => (
+            <Button
+              key={index + 13}
+              variant="ghost"
+              size="sm"
+              onClick={button.action}
+              title={button.title}
+              className="h-8 w-8 p-0"
+            >
+              <button.icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+        
+        <div className="w-px h-6 bg-border mx-1" />
+        
+        {/* Advanced group */}
+        <div className="flex items-center gap-1">
+          {toolbarButtons.slice(17).map((button, index) => (
+            <Button
+              key={index + 17}
+              variant="ghost"
+              size="sm"
+              onClick={button.action}
+              title={button.title}
+              className="h-8 w-8 p-0"
+            >
+              <button.icon className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+        
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant={isPreviewMode ? 'default' : 'outline'}

@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Filter, Eye, Edit, Trash2, Share, Download, BarChart, BookOpen, Wand2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import { StoryEditor } from './story/StoryEditor';
 import { StoryAnalytics } from './story/StoryAnalytics';
 import { StoryExport } from './story/StoryExport';
@@ -428,7 +431,12 @@ export function StoryManager({ className }: StoryManagerProps) {
           </DialogHeader>
           {viewingStory && (
             <div className="prose dark:prose-invert max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: viewingStory.content || 'No content yet.' }} />
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+              >
+                {viewingStory.content || 'No content yet.'}
+              </ReactMarkdown>
             </div>
           )}
         </DialogContent>
