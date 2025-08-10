@@ -72,15 +72,16 @@ export const DraggableProblem: React.FC<DraggableProblemProps> = ({
       ref={setNodeRef}
       style={style}
       className={`border rounded-lg p-4 space-y-4 transition-all ${
-        isDragging ? 'opacity-50 shadow-lg' : 'hover:shadow-md'
+        isDragging ? 'opacity-50 shadow-lg z-50' : 'hover:shadow-md'
       }`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between group">
         <div className="flex items-center gap-4">
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-foreground"
+            className="cursor-grab active:cursor-grabbing flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors"
+            title="Drag to move this problem to another folder"
           >
             <GripVertical className="h-4 w-4" />
           </div>

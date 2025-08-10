@@ -85,6 +85,7 @@ export const DSATracker = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Folders</CardTitle>
+                    <p className="text-sm text-muted-foreground">Drag problems to folders to move them</p>
                   </CardHeader>
                   <CardContent>
                     <DSAFolderManager 
@@ -115,9 +116,14 @@ export const DSATracker = () => {
             </div>
             <DragOverlay>
               {draggedProblem ? (
-                <div className="bg-card border rounded-lg p-4 shadow-lg">
-                  <h3 className="font-medium">{draggedProblem.title}</h3>
-                  <div className="text-sm text-muted-foreground">{draggedProblem.topic}</div>
+                <div className="bg-card border rounded-lg p-4 shadow-lg opacity-90">
+                  <div className="flex items-center gap-4">
+                    <div className="w-4 h-4 bg-primary/20 rounded" />
+                    <div>
+                      <h3 className="font-medium">{draggedProblem.title}</h3>
+                      <div className="text-sm text-muted-foreground">{draggedProblem.topic}</div>
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </DragOverlay>
@@ -130,7 +136,22 @@ export const DSATracker = () => {
               <CardTitle>All Problems</CardTitle>
             </CardHeader>
             <CardContent>
-              <DSAProblemsView />
+              <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <DSAProblemsView />
+                <DragOverlay>
+                  {draggedProblem ? (
+                    <div className="bg-card border rounded-lg p-4 shadow-lg opacity-90">
+                      <div className="flex items-center gap-4">
+                        <div className="w-4 h-4 bg-primary/20 rounded" />
+                        <div>
+                          <h3 className="font-medium">{draggedProblem.title}</h3>
+                          <div className="text-sm text-muted-foreground">{draggedProblem.topic}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </CardContent>
           </Card>
         </TabsContent>
