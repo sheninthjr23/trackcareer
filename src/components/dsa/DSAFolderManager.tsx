@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Folder, FolderOpen, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useDroppable } from '@dnd-kit/core';
+import { DSAFolderItem } from './DSAFolderItem';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -146,130 +146,39 @@ export const DSAFolderManager: React.FC<DSAFolderManagerProps> = ({
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolderId === folder.id;
     const isEditing = editingFolderId === folder.id;
-    
-    const { isOver, setNodeRef } = useDroppable({
-      id: folder.id,
-    });
+
+    const childFolders = buildFolderTree(folders, folder.id);
 
     return (
-      <div key={folder.id} className="space-y-1">
-        <div 
-          ref={setNodeRef}
-          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${
-            isSelected ? 'bg-primary/10 border border-primary/20' : ''
-          } ${isOver ? 'bg-primary/20 border-2 border-primary border-dashed' : ''}`}
-          style={{ marginLeft: `${level * 16}px` }}
-        >
-          {hasChildren && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0"
-              onClick={() => toggleExpanded(folder.id)}
-            >
-              {isExpanded ? <FolderOpen className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
-            </Button>
-          )}
-          
-          {!hasChildren && <div className="w-6" />}
-          
-          {isEditing ? (
-            <div className="flex items-center gap-2 flex-1">
-              <Input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                className="h-8"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    updateFolderMutation.mutate({ id: folder.id, name: editingName });
-                  } else if (e.key === 'Escape') {
-                    setEditingFolderId(null);
-                    setEditingName('');
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                onClick={() => updateFolderMutation.mutate({ id: folder.id, name: editingName })}
-                disabled={!editingName.trim()}
-              >
-                Save
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditingFolderId(null);
-                  setEditingName('');
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <>
-              <span 
-                className="flex-1 text-sm"
-                onClick={() => onFolderSelect(folder.id)}
-              >
-                {folder.name}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingFolderId(folder.id);
-                    setEditingName(folder.name);
-                  }}
-                >
-                  <Edit className="h-3 w-3" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Folder</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{folder.name}"? This will also delete all problems in this folder. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => deleteFolderMutation.mutate(folder.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </>
-          )}
-        </div>
-        
-        {hasChildren && isExpanded && (
-          <div className="space-y-1">
-            {buildFolderTree(folders, folder.id).map(childFolder => 
-              renderFolder(childFolder, level + 1)
-            )}
-          </div>
-        )}
-      </div>
+      <DSAFolderItem
+        key={folder.id}
+        folder={folder}
+        level={level}
+        hasChildren={hasChildren}
+        isExpanded={isExpanded}
+        isSelected={isSelected}
+        isEditing={isEditing}
+        editingName={editingName}
+        onToggleExpanded={toggleExpanded}
+        onFolderSelect={onFolderSelect}
+        onStartEdit={(folder) => {
+          setEditingFolderId(folder.id);
+          setEditingName(folder.name);
+        }}
+        onCancelEdit={() => {
+          setEditingFolderId(null);
+          setEditingName('');
+        }}
+        onSaveEdit={(folderId, name) => {
+          updateFolderMutation.mutate({ id: folderId, name });
+        }}
+        onDelete={(folderId) => {
+          deleteFolderMutation.mutate(folderId);
+        }}
+        onEditingNameChange={setEditingName}
+      >
+        {childFolders.map(childFolder => renderFolder(childFolder, level + 1))}
+      </DSAFolderItem>
     );
   };
 
