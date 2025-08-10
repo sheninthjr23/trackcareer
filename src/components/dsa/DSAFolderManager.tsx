@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Folder, FolderOpen, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDroppable } from '@dnd-kit/core';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -145,13 +146,18 @@ export const DSAFolderManager: React.FC<DSAFolderManagerProps> = ({
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolderId === folder.id;
     const isEditing = editingFolderId === folder.id;
+    
+    const { isOver, setNodeRef } = useDroppable({
+      id: folder.id,
+    });
 
     return (
       <div key={folder.id} className="space-y-1">
         <div 
-          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-muted/50 ${
+          ref={setNodeRef}
+          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${
             isSelected ? 'bg-primary/10 border border-primary/20' : ''
-          }`}
+          } ${isOver ? 'bg-primary/20 border-2 border-primary border-dashed' : ''}`}
           style={{ marginLeft: `${level * 16}px` }}
         >
           {hasChildren && (

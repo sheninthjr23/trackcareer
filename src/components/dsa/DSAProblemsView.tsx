@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { DSATopicSelect } from './DSATopicSelect';
 import { DSACodeSolutions } from './DSACodeSolutions';
+import { DraggableProblem } from './DraggableProblem';
 
 interface DSAProblem {
   id: string;
@@ -208,6 +209,49 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
       toast({ title: 'Error deleting problem', description: error.message, variant: 'destructive' });
     },
   });
+
+  const moveProblemMutation = useMutation({
+    mutationFn: async ({ problemId, targetFolderId, problem }: { problemId: string, targetFolderId: string, problem: DSAProblem }) => {
+      const { data: targetFolder } = await supabase
+        .from('dsa_folders')
+        .select('name')
+        .eq('id', targetFolderId)
+        .single();
+
+      const { data, error } = await supabase
+        .from('dsa_problems')
+        .update({ 
+          folder_id: targetFolderId,
+          topic: targetFolder?.name || problem.topic,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', problemId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dsa-problems'] });
+      queryClient.invalidateQueries({ queryKey: ['dsa-practice-problems'] });
+      toast({ title: 'Problem moved successfully' });
+    },
+    onError: (error) => {
+      toast({ title: 'Error moving problem', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Listen for move problem events from drag and drop
+  useEffect(() => {
+    const handleMoveProblem = (event: CustomEvent) => {
+      const { problemId, targetFolderId, problem } = event.detail;
+      moveProblemMutation.mutate({ problemId, targetFolderId, problem });
+    };
+
+    window.addEventListener('moveProblem', handleMoveProblem as EventListener);
+    return () => window.removeEventListener('moveProblem', handleMoveProblem as EventListener);
+  }, [moveProblemMutation]);
 
   const resetForm = () => {
     setFormData({
@@ -412,91 +456,17 @@ export const DSAProblemsView: React.FC<DSAProblemsViewProps> = ({ folderId }) =>
           </div>
         ) : (
           filteredProblems.map((problem) => (
-            <div key={problem.id} className="border rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Checkbox
-                    checked={problem.is_completed}
-                    onCheckedChange={(checked) =>
-                      toggleCompletionMutation.mutate({
-                        id: problem.id,
-                        is_completed: !!checked,
-                      })
-                    }
-                  />
-                  <div>
-                    <h3 className="font-medium">{problem.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={getLevelBadgeVariant(problem.level)}>
-                        {problem.level}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">{problem.topic}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {problem.problem_link && (
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={problem.problem_link} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </Button>
-                  )}
-                  {problem.github_solution_link && (
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={problem.github_solution_link} target="_blank" rel="noopener noreferrer">
-                        <Github className="h-3 w-3" />
-                      </a>
-                    </Button>
-                  )}
-                  {problem.youtube_link && (
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={problem.youtube_link} target="_blank" rel="noopener noreferrer">
-                        <Youtube className="h-3 w-3" />
-                      </a>
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => startEdit(problem)}
-                  >
-                    <Edit className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => deleteProblemMutation.mutate(problem.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setExpandedProblem(
-                      expandedProblem === problem.id ? null : problem.id
-                    )}
-                  >
-                    {expandedProblem === problem.id ? 'Hide' : 'Show'} Solutions
-                  </Button>
-                </div>
-              </div>
-
-              {expandedProblem === problem.id && (
-                <DSACodeSolutions
-                  problemId={problem.id}
-                  codeSolutions={Array.isArray(problem.code_solutions) ? problem.code_solutions : []}
-                />
-              )}
-
-              {problem.completed_at && (
-                <div className="text-sm text-muted-foreground">
-                  Completed on {format(new Date(problem.completed_at), 'MMM dd, yyyy')}
-                </div>
-              )}
-            </div>
+            <DraggableProblem
+              key={problem.id}
+              problem={problem}
+              expandedProblem={expandedProblem}
+              onToggleCompletion={(id, isCompleted) =>
+                toggleCompletionMutation.mutate({ id, is_completed: isCompleted })
+              }
+              onEdit={startEdit}
+              onDelete={(id) => deleteProblemMutation.mutate(id)}
+              onToggleExpanded={setExpandedProblem}
+            />
           ))
         )}
       </div>

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { DSAFolderManager } from './dsa/DSAFolderManager';
 import { DSAProblemsView } from './dsa/DSAProblemsView';
 import { DSAWeeklyActivity } from './dsa/DSAWeeklyActivity';
@@ -12,6 +13,31 @@ import { Folder, Target, Activity, BarChart3, Zap } from 'lucide-react';
 export const DSATracker = () => {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('live');
+  const [draggedProblem, setDraggedProblem] = useState<any>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const problem = event.active.data.current?.problem;
+    setDraggedProblem(problem);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggedProblem(null);
+
+    if (!over) return;
+
+    const problemId = active.id as string;
+    const targetFolderId = over.id as string;
+    const problem = active.data.current?.problem;
+
+    if (problem && targetFolderId && problem.folder_id !== targetFolderId) {
+      // We'll pass this to the DSAProblemsView component
+      const moveProblemEvent = new CustomEvent('moveProblem', {
+        detail: { problemId, targetFolderId, problem }
+      });
+      window.dispatchEvent(moveProblemEvent);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,39 +79,49 @@ export const DSATracker = () => {
         </TabsContent>
 
         <TabsContent value="folders" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Folders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DSAFolderManager 
-                    selectedFolderId={selectedFolderId}
-                    onFolderSelect={setSelectedFolderId}
-                  />
-                </CardContent>
-              </Card>
+          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Folders</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DSAFolderManager 
+                      selectedFolderId={selectedFolderId}
+                      onFolderSelect={setSelectedFolderId}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {selectedFolderId ? 'Problems in Folder' : 'Select a Folder'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedFolderId ? (
+                      <DSAProblemsView folderId={selectedFolderId} />
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        Select a folder to view and manage problems
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {selectedFolderId ? 'Problems in Folder' : 'Select a Folder'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {selectedFolderId ? (
-                    <DSAProblemsView folderId={selectedFolderId} />
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8">
-                      Select a folder to view and manage problems
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+            <DragOverlay>
+              {draggedProblem ? (
+                <div className="bg-card border rounded-lg p-4 shadow-lg">
+                  <h3 className="font-medium">{draggedProblem.title}</h3>
+                  <div className="text-sm text-muted-foreground">{draggedProblem.topic}</div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </TabsContent>
 
         <TabsContent value="problems">
