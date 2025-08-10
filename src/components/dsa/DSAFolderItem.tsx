@@ -63,20 +63,14 @@ export const DSAFolderItem: React.FC<DSAFolderItemProps> = ({
   });
 
   return (
-    <div className="space-y-1 relative">
+    <div className="space-y-1">
       <div 
         ref={setNodeRef}
-        className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all duration-200 border-2 ${
-          isSelected ? 'bg-primary/10 border-primary/30' : 'border-transparent'
-        } ${isOver ? 'bg-primary/20 border-primary border-dashed shadow-md scale-105' : 'hover:bg-muted/50'}`}
+        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${
+          isSelected ? 'bg-primary/10 border border-primary/20' : ''
+        } ${isOver ? 'bg-primary/20 border-2 border-primary border-dashed' : ''}`}
         style={{ marginLeft: `${level * 16}px` }}
-        title={isOver ? "Drop problem here to move it to this folder" : `Click to select ${folder.name} folder`}
       >
-        {isOver && (
-          <div className="absolute -top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md z-10">
-            Drop here
-          </div>
-        )}
         {hasChildren && (
           <Button
             variant="ghost"
